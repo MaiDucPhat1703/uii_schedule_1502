@@ -1,0 +1,11 @@
+import assert from 'node:assert/strict';
+import * as THREE from '../public/studio/assets/three.module.js';
+import {buildModel} from '../public/studio/model.js';
+import {pickItem,clipboardRecord,parseClipboard} from '../public/studio/interaction.js';
+const m=buildModel();m.root.updateMatrixWorld(true);const chairs=m.editItems.filter(i=>i.kind==='chair');const ray=new THREE.Raycaster();let oldWrong=0;
+for(const chair of chairs){let seat;chair.object.traverse(o=>{if(o.isMesh&&o.geometry.parameters.width===.45)seat=o});const p=seat.getWorldPosition(new THREE.Vector3());ray.set(new THREE.Vector3(p.x,30,p.z),new THREE.Vector3(0,-1,0));assert.equal(pickItem(ray,m.editItems,{kind:'chair'})?.id,chair.id,chair.id);assert.equal(pickItem(ray,m.editItems)?.id,chair.id,'unfiltered '+chair.id);const old=ray.intersectObjects(m.editItems.map(i=>i.object),true)[0];let owner=old?.object;while(owner&&!owner.userData.editId)owner=owner.parent;if(owner?.userData.editId!==chair.id)oldWrong++;}
+const a=chairs[0],p=a.object.getWorldPosition(new THREE.Vector3());a.object.visible=false;ray.set(new THREE.Vector3(p.x,30,p.z),new THREE.Vector3(0,-1,0));assert.notEqual(pickItem(ray,m.editItems,{kind:'chair'})?.id,a.id);a.object.visible=true;
+// Hidden roofs and edge lines must never count as selectable mesh surfaces.
+const fake=new THREE.Group(),line=new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.BoxGeometry(5,1,5)),new THREE.LineBasicMaterial());fake.add(line);m.root.add(fake);m.root.updateMatrixWorld(true);ray.set(new THREE.Vector3(0,30,0),new THREE.Vector3(0,-1,0));assert.equal(pickItem(ray,[{id:'line',kind:'chair',object:fake}]),null);
+a.source=undefined;a.bookable=true;a.object.position.set(3,0,7);a.object.rotation.y=1.1;a.object.scale.set(1.2,1,1.4);const record=clipboardRecord(a),parsed=parseClipboard(JSON.stringify(record),new Map(chairs.map(i=>[i.id,i])));assert.deepEqual(parsed.position,[3,0,7]);assert.deepEqual(parsed.scale,[1.2,1,1.4]);assert.equal(parsed.bookable,true);assert.equal(parseClipboard('{"format":"wrong"}',new Map()),null);
+console.log(`PASS exact mesh picks for all ${chairs.length} chairs; old picker misselected ${oldWrong} of those clicks. Hidden/line filtering and copy transform round-trip passed.`);

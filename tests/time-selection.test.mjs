@@ -1,0 +1,6 @@
+import assert from 'node:assert/strict';import {minuteAt,draggedRange} from '../public/booking/time-selection.js';import {seatState,rangeError} from '../public/booking/availability.js';
+const p={openMinute:420,closeMinute:1260,stepMinutes:15,minMinutes:30,maxSeatMinutes:480,bufferMinutes:0,weekdays:[0,1,2,3,4,5,6],advanceDays:30};
+for(const width of [300,600,1200]){const left=40;assert.equal(minuteAt(left+width*3/14,left,width,p),600);assert.equal(minuteAt(left+width*5/14,left,width,p),720);assert.equal(minuteAt(-500,left,width,p),420);assert.equal(minuteAt(left+width+500,left,width,p),1260)}
+assert.deepEqual(draggedRange(600,720,p),{start:600,end:720});assert.deepEqual(draggedRange(720,600,p),{start:600,end:720});
+const reservations=[{seatId:'s',resourceType:'seat',startMinute:600,endMinute:720,status:'active'}];assert.equal(seatState('s',600,720,reservations,p),'busy');assert.equal(seatState('s',720,780,reservations,p),'free');assert.equal(seatState('s',540,600,reservations,p),'free');
+const now=+new Date('2026-10-31T00:00:00+07:00');assert.equal(rangeError('2026-11-01',600,720,p,now),'');assert.ok(rangeError('2026-11-01',600,615,p,now));console.log('PASS time gestures at 300/600/1200px, forward/reverse dragging, endpoint bounds, occupied intervals and adjacent free slots');

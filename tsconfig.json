@@ -1,0 +1,1 @@
+{"compilerOptions":{"target":"ES2022","module":"ESNext","moduleResolution":"bundler","strict":false,"noEmit":true,"allowImportingTsExtensions":true,"allowJs":true,"checkJs":false,"lib":["ES2022","DOM"],"types":["node"],"skipLibCheck":true},"include":["app/**/*.ts","public/booking/resources.js"]}
