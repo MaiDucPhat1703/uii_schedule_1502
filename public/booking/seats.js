@@ -34,7 +34,7 @@ function drawOverview(){const node=svg('svg',{viewBox:'-8.5 -9.3 27 18.8',class:
 function buildMap(data,preview=false){
  data=normalizeBookingLayout(data);
  objects=data.objects.filter(o=>!o.deleted).map(o=>({...o,meta:catalog.get(o.source||o.id)})).filter(o=>o.meta);
- seats=bookingResources(data).sort((a,b)=>(a.tableNumber||99)-(b.tableNumber||99)||a.shortCode.localeCompare(b.shortCode));const keepId=selected?.id;selected=seats.find(s=>s.id===keepId)||null;if(activeArea==='working'&&activeTable&&!seats.some(s=>s.capacity===1&&s.tableId===activeTable)){activeTable=null;selected=null;}
+ seats=bookingResources(data).sort((a,b)=>(a.tableNumber||99)-(b.tableNumber||99)||a.shortCode.localeCompare(b.shortCode));const keepId=selected?.id;selected=seats.find(s=>s.id===keepId)||null;if(activeArea==='meeting'&&!selected){selected=seats.find(s=>s.capacity===6)||null;if(selected)picked.add(selected.id)}if(activeArea==='working'&&activeTable&&!seats.some(s=>s.capacity===1&&s.tableId===activeTable)){activeTable=null;selected=null;}
  drawOverview();drawDetailMap();applyZoom();
  $('emptySpace').hidden=!!space;$('emptySpace').querySelector('h3').textContent=preview?'Sơ đồ mẫu — chưa mở cho đặt thực tế':'Chưa có sơ đồ được áp dụng';
 }

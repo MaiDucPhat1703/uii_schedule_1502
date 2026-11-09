@@ -70,3 +70,8 @@ Trang admin đang đăng nhập tải được thống kê 5 lịch đã duyệt
 Supabase không báo cảnh báo hiệu năng hoặc sức khỏe tại thời điểm kiểm tra. Các bảng schema `uii` có RLS và không có policy cho trình duyệt, phù hợp cách API riêng xử lý quyền. Supabase có cảnh báo bảo vệ mật khẩu bị lộ đang tắt: [hướng dẫn cấu hình](https://supabase.com/docs/guides/auth/password-security#password-strength-and-leaked-password-protection).
 
 **Cập nhật sau cấp quyền:** đã xác minh ghi được vào repo `MaiDucPhat1703/uii_schedule_1502`. Bản sửa được đưa lên GitHub để workflow chạy lại TypeScript, toàn bộ kiểm thử và build trước khi triển khai Pages. Xem tab Actions để kiểm tra trạng thái triển khai mới nhất.
+
+## Bổ sung khi kiểm tra giao diện sau triển khai
+
+- Sửa CSS chặn bấm trực tiếp vào mặt Bàn 7. Chỉ đồ nội thất có vai trò button được nhận thao tác chuột.
+- Khi khách mở khu Bàn 7 trước lúc sơ đồ tải xong, hệ thống chọn lại nguyên cụm sau khi dữ liệu sẵn sàng. Đã bổ sung trường hợp này vào kiểm tra luồng giao diện.

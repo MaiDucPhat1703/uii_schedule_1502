@@ -28,3 +28,6 @@ body{font-size:14px}label{font-size:12px}.intro p,.section-top p,.seat-detail p{
 .repeat-preview.error{color:#a33b32}
 .repeat-help{font-size:11px;color:#82907f;margin:10px 0 0}
 @media(max-width:560px){.repeat-options{grid-template-columns:1fr}}
+
+/* The meeting table is an interactive resource; ordinary furniture stays passive. */
+.booking-map .furniture[role="button"]{pointer-events:auto;cursor:pointer}

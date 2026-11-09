@@ -7,10 +7,11 @@ const interval=globalThis.setInterval,timeout=globalThis.setTimeout;globalThis.s
 const model=buildModel();const objects=model.editItems.map(i=>({id:i.id,label:i.label,position:i.object.position.toArray(),rotation:i.object.rotation.toArray().slice(0,3),scale:i.object.scale.toArray(),bookable:i.kind==='chair'&&Number(i.id.slice(6))>=33&&Number(i.id.slice(6))<=68,deleted:false}));
 objects.push({id:MEETING_TABLE,source:'hex-3',position:[14,0,-6],rotation:[0,0,0],scale:[1,1,1],bookable:false});for(let i=0;i<6;i++)objects.push({id:'meeting-'+i,source:'chair-'+(45+i),position:[14+Math.cos(i*Math.PI/3),0,-6+Math.sin(i*Math.PI/3)],rotation:[0,0,0],scale:[1,1,1],bookable:true});
 let layoutRevision=1;let reservations=[];const policy={seatsOpen:true,openMinute:420,closeMinute:1260,stepMinutes:15,minMinutes:30,maxSeatMinutes:480,bufferMinutes:0,weekdays:[0,1,2,3,4,5,6],advanceDays:30};
-globalThis.fetch=async path=>({ok:true,json:async()=>path.startsWith('/api/settings')?{policy}:path.startsWith('/api/space')?{space:{name:'Test',revision:layoutRevision,data:{version:1,objects}}}:{reservations,mine:[]}});
+let earlyAreaClick=false;globalThis.fetch=async path=>{if(!earlyAreaClick&&path==='/api/settings'){earlyAreaClick=true;nodes.get('meetingArea').onclick()}return ({ok:true,json:async()=>path.startsWith('/api/settings')?{policy}:path.startsWith('/api/space')?{space:{name:'Test',revision:layoutRevision,data:{version:1,objects}}}:{reservations,mine:[]}})};
 try{let source=fs.readFileSync('public/booking/seats.js','utf8').replace(/from '([^']+)'/g,(_,p)=>"from '"+pathToFileURL(process.cwd()+(p.startsWith('/studio/')?'/public'+p:'/public/booking/'+p)).href+"'");await import('data:text/javascript,'+encodeURIComponent(source));
  const get=id=>nodes.get(id),all=(node)=>[node,...node.children.filter(c=>c instanceof Element).flatMap(all)];
 
+ assert.ok(get('selectedTitle').textContent.includes('Bàn 7'),'early area click selects the meeting table after data loads');assert.equal(get('proceed').disabled,false);get('backOverview').onclick();
  assert.equal(get('overviewPanel').hidden,false);assert.equal(get('bookingWorkspace').hidden,true);get('workingArea').onclick();
  const chair=id=>all(get('mapSections')).find(n=>n.attrs['data-seat-id']===id);
  assert.equal(all(get('mapSections')).filter(n=>n.attrs['data-seat-id']).length,36);assert.equal(get('seatList').children.length,0,'no duplicate seat catalogue');assert.equal(get('tablePicker').children.length,0,'no table toolbar');
