@@ -1,0 +1,28 @@
+/* Official UII identity: keep original colors and proportions. */
+.brand { min-width: 0; gap: 18px; }
+.brand .brand-logo {
+  display: block;
+  width: 205px;
+  height: auto;
+  max-width: 100%;
+  flex: 0 0 auto;
+  object-fit: contain;
+}
+.brand > span { line-height: 1.5; }
+.login .brand { flex-wrap: wrap; row-gap: 16px; }
+.login .brand > span { flex-basis: 100%; border-left: 0; padding-left: 0; }
+@media (max-width: 1150px) {
+  .brand .brand-logo { width: 170px; }
+}
+@media (max-width: 700px) {
+  header { height: auto; min-height: 80px; padding: 14px 16px; flex-wrap: wrap; gap: 14px; }
+  .brand { max-width: 100%; gap: 12px; }
+  .brand .brand-logo { width: 145px; }
+  .brand > span { font-size: 9px; letter-spacing: 1px; padding-left: 12px; }
+  .brand small { font-size: 7px; letter-spacing: .5px; }
+  header nav { max-width: 100%; flex-wrap: wrap; gap: 12px; }
+}
+@media (max-width: 360px) {
+  header .brand { flex-wrap: wrap; }
+  header .brand > span { flex-basis: 100%; border-left: 0; padding-left: 0; }
+}
