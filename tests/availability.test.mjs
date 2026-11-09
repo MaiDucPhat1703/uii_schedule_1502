@@ -6,3 +6,12 @@ const buffered={...p,bufferMinutes:15};assert.equal(seatState('chair-1',600,660,
 assert.equal(rangeError(day,480,540,p,now),'');assert.ok(rangeError(day,540,480,p,now));assert.ok(rangeError(day,541,600,p,now));assert.ok(rangeError('2026-02-30',480,540,p,now));assert.ok(rangeError('2026-10-28',480,540,p,now),'past dates are not bookable');assert.ok(rangeError(day,420,1320,p,now));assert.equal(freeWindows('chair-2','2026-10-29',[],p,+new Date('2026-10-29T10:07:00+07:00'))[0].start,420);assert.deepEqual(freeWindows('chair-1','2026-10-29',[],p,+new Date('2026-10-29T22:01:00+07:00')),[{start:420,end:1320}]);
 const unlimited={...p,unlimitedBooking:true};assert.equal(rangeError('2028-10-30',420,1320,unlimited,now),'','unlimited future horizon and duration within daily hours');assert.equal(rangeError(day,420,1320,unlimited,now),'','unlimited duration');assert.ok(rangeError('2026-10-28',420,600,unlimited,now),'past dates remain blocked when unlimited');assert.equal(codeForSeat('chair-12'),'S012');assert.equal(codeForSeat('added-abcdef'),'S-ABCDEF');
 console.log('PASS exact-range seat colors, partial overlaps, pending/active distinction, free windows, changeover gap, past and current-day slots, invalid ranges and stable seat codes');
+
+const {initialRange}=await import('../public/booking/availability.js');
+for(const p of [
+ {openMinute:0,closeMinute:1440,stepMinutes:15,minMinutes:30,maxSeatMinutes:45,unlimitedBooking:false},
+ {openMinute:420,closeMinute:480,stepMinutes:30,minMinutes:60,maxSeatMinutes:60,unlimitedBooking:true},
+ {openMinute:420,closeMinute:1320,stepMinutes:15,minMinutes:30,maxSeatMinutes:480,unlimitedBooking:true}
+])for(const start of [0,421,1261,1439,1500]){
+ const r=initialRange(p,start,0);assert.ok(r.start>=p.openMinute&&r.end<=p.closeMinute);assert.ok(r.end-r.start>=p.minMinutes);assert.equal(r.start%p.stepMinutes,0);assert.equal(r.end%p.stepMinutes,0);if(!p.unlimitedBooking)assert.ok(r.end-r.start<=p.maxSeatMinutes);
+}

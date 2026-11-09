@@ -1,0 +1,26 @@
+Bản gốc: 4fe886cb4c32d6c93c0ee5f94a9d11577b426e5e
+Ngày: 10/11/2026
+API Supabase: đã triển khai phiên bản 5; GitHub: quyền ghi đã được xác minh
+
+.gitignore
+BAO_CAO_KIEM_THU_20261110.md
+CAP_NHAT_QA_20261110.md
+DANH_SACH_FILE_SUA.txt
+README.md
+app/api/admin/auth/route.ts
+app/api/admin/bookings/route.ts
+app/api/layouts/route.ts
+app/booking-policy.ts
+public/admin/admin.js
+public/admin/index.html
+public/booking/availability.js
+public/booking/index.html
+public/booking/seats.js
+public/runtime.js
+scripts/build.mjs
+supabase/functions/uii-api/index.ts
+tests/admin-review.test.mjs
+tests/availability.test.mjs
+tests/booking-ui.test.mjs
+tests/supabase-api.test.mjs
+tests/supabase-runtime.test.mjs

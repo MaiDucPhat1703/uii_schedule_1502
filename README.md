@@ -1,5 +1,7 @@
 # UII Schedule 1502 — GitHub Pages + Supabase
 
+**Cập nhật dự án đang chạy:** đọc [CAP_NHAT_QA_20261110.md](CAP_NHAT_QA_20261110.md) và [BAO_CAO_KIEM_THU_20261110.md](BAO_CAO_KIEM_THU_20261110.md). Bản sửa này cần cập nhật cả API Supabase và mã GitHub; không tạo lại database.
+
 Dành cho Mai Đức Phát, tài khoản GitHub `MaiDucPhat1703`, repository `uii_schedule_1502`.
 
 Bản này thay thế bộ `UII_Booking_GitHub_D1.zip`. Không dùng Cloudflare. Bạn quản lý mã nguồn trong GitHub, database và đăng nhập trong Supabase. Website hiện tại chưa bị chuyển sang Supabase; gói mã này cần được cấu hình và triển khai vào tài khoản của bạn theo các bước dưới đây.
@@ -13,7 +15,7 @@ Bản này thay thế bộ `UII_Booking_GitHub_D1.zip`. Không dùng Cloudflare.
 | Database Postgres, tài khoản admin | Supabase |
 | API gửi yêu cầu, duyệt lịch, sửa sơ đồ | Supabase Edge Function `uii-api` |
 
-Khách không cần đăng nhập hoặc đăng ký. Admin đăng nhập bằng email và mật khẩu được tạo trong Supabase Auth. Khách chọn nhiều ghế lẻ hoặc chọn riêng Bàn 7 nguyên cụm 6 chỗ. Các yêu cầu chờ xử lý không xuất hiện trong lịch công khai. Chỉ lịch đã duyệt chiếm chỗ. Khách không tự sửa/hủy. Admin sửa được thông tin, ngày, giờ, ghế và ghi chú. Đặt và duyệt ngày quá khứ vẫn được, trong giới hạn giờ hoạt động đã cấu hình.
+Khách không cần đăng nhập hoặc đăng ký. Admin đăng nhập bằng email và mật khẩu được tạo trong Supabase Auth. Khách chọn nhiều ghế lẻ hoặc chọn riêng Bàn 7 nguyên cụm 6 chỗ. Các yêu cầu chờ xử lý không xuất hiện trong lịch công khai. Chỉ lịch đã duyệt chiếm chỗ. Khách không tự sửa/hủy. Admin sửa được thông tin, ngày, giờ, ghế và ghi chú. Ngày đã qua bị chặn ở cả giao diện và API.
 
 ## 1. Chuẩn bị repository đúng tài khoản
 
@@ -228,7 +230,7 @@ Kiểm tra tối thiểu:
 | Duyệt yêu cầu khác trùng ghế/giờ | Bị chặn, không duyệt chồng |
 | Admin sửa giờ, nội dung, vị trí | Cập nhật đúng sau khi lưu |
 | Khách tự hủy/sửa | Không thực hiện được |
-| Đặt và duyệt ngày quá khứ | Được trong giờ hoạt động đã cấu hình |
+| Đặt và duyệt ngày quá khứ | Bị chặn ở cả giao diện và API |
 | Đóng nhận đặt ghế | Khách không gửi được yêu cầu mới |
 
 Chỉ đổi link cho mọi người sau khi kiểm tra thực tế đạt. Gói mã đã kiểm tra logic trên PostgreSQL chạy cục bộ bằng PGlite và kiểm tra cầu nối trình duyệt; chưa được triển khai thử vào project Supabase của bạn, chưa kiểm tra trình duyệt thật trên tài khoản của bạn.

@@ -5,7 +5,19 @@ import {bookingResources} from '../../../../public/booking/resources';
 export const dynamic='force-dynamic';
 const json=(b:unknown,s=200)=>Response.json(b,{status:s,headers:{'Cache-Control':'no-store'}});
 const editToken=(row:any)=>JSON.stringify(Object.fromEntries(Object.entries(row).filter(([k])=>k!=='edit_token').sort(([a],[b])=>a.localeCompare(b))));
-export async function GET(r:Request){if(!await getAdmin(r))return json({error:'Vui lòng đăng nhập admin.'},401);const url=new URL(r.url),day=url.searchParams.get('day'),status=url.searchParams.get('status');const conditions=["resource_type='seat'"],args=[];if(day&&/^\d{4}-\d{2}-\d{2}$/.test(day)){conditions.push('day=?');args.push(day)}if(status&&['pending','active','rejected','cancelled'].includes(status)){conditions.push('status=?');args.push(status)}const rows=await env.DB!.prepare('SELECT * FROM seat_bookings WHERE '+conditions.join(' AND ')+' ORDER BY created_at DESC LIMIT 300').bind(...args).all();const totals=await env.DB!.prepare("SELECT status,COUNT(*) n FROM seat_bookings WHERE resource_type='seat' GROUP BY status").all();return json({bookings:rows.results.map((b:any)=>({...b,edit_token:editToken(b)})),totals:totals.results});}
+export async function GET(r:Request){
+ if(!await getAdmin(r))return json({error:'Vui lòng đăng nhập admin.'},401);
+ const url=new URL(r.url),day=url.searchParams.get('day'),status=url.searchParams.get('status'),query=(url.searchParams.get('search')||'').trim().toLowerCase();
+ const offset=Number(url.searchParams.get('offset')||0),limit=100;
+ if(!Number.isSafeInteger(offset)||offset<0||query.length>255||day&&!dayValid(day)||status&&!['pending','active','rejected','cancelled'].includes(status))return json({error:'Bộ lọc không hợp lệ.'},400);
+ const conditions=["resource_type='seat'"],args:any[]=[];
+ if(day){conditions.push('day=?');args.push(day)}
+ if(status){conditions.push('status=?');args.push(status)}
+ if(query){conditions.push("position(? in lower(concat_ws(' ',display_name,organization,seat_label,subject,email,phone,id)))>0");args.push(query)}
+ const rows=await env.DB!.prepare('SELECT * FROM seat_bookings WHERE '+conditions.join(' AND ')+' ORDER BY created_at DESC,id DESC LIMIT ? OFFSET ?').bind(...args,limit+1,offset).all();
+ const totals=await env.DB!.prepare("SELECT status,COUNT(*) n FROM seat_bookings WHERE resource_type='seat' GROUP BY status").all();
+ return json({bookings:rows.results.slice(0,limit).map((b:any)=>({...b,edit_token:editToken(b)})),totals:totals.results,offset,limit,hasMore:rows.results.length>limit});
+}
 export async function POST(r:Request){if(!await getAdmin(r))return json({error:'Vui lòng đăng nhập admin.'},401);if(!sameOrigin(r))return json({error:'Yêu cầu không hợp lệ.'},403);let b:any;try{b=await r.json()}catch{return json({error:'Dữ liệu không hợp lệ.'},400)}if(typeof b?.id!=='string'||(b.note!==undefined&&(typeof b.note!=='string'||b.note.length>1000))||!['approve','edit','reject','cancel'].includes(b.action))return json({error:'Thao tác không hợp lệ.'},400);
  const current=await env.DB!.prepare("SELECT * FROM seat_bookings WHERE id=? AND resource_type='seat'").bind(b.id).first();if(!current)return json({error:'Không tìm thấy yêu cầu.'},404);if(b.expectedToken&&b.expectedToken!==editToken(current))return json({error:'Yêu cầu đã được thay đổi. Đóng biểu mẫu và tải lại trước khi xử lý.'},409);
  if(b.action==='edit'||b.action==='approve'){

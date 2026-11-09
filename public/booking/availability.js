@@ -1,5 +1,12 @@
 export const formatTime=m=>String(Math.floor(m/60)).padStart(2,'0')+':'+String(m%60).padStart(2,'0');
 export const localDay=now=>new Date(now??Date.now()).toLocaleDateString('en-CA',{timeZone:'Asia/Ho_Chi_Minh'});
+export function initialRange(p,preferredStart,preferredEnd){
+ const step=p.stepMinutes,min=p.minMinutes,max=p.unlimitedBooking?p.closeMinute-p.openMinute:p.maxSeatMinutes;
+ const start=Math.min(p.closeMinute-min,Math.max(p.openMinute,Math.ceil(preferredStart/step)*step));
+ const wantedEnd=Number.isFinite(preferredEnd)&&preferredEnd-start>=min?preferredEnd:start+Math.max(60,min);
+ const end=Math.min(p.closeMinute,start+Math.floor(max/step)*step,Math.max(start+min,Math.ceil(wantedEnd/step)*step));
+ return {start,end};
+}
 export function firstFutureMinute(day,policy,now=Date.now()){if(day!==localDay(now))return policy.openMinute;const midnight=+new Date(day+'T00:00:00+07:00');return Math.max(policy.openMinute,Math.ceil((now-midnight)/60000/policy.stepMinutes)*policy.stepMinutes)}
 export function rangeError(day,start,end,p,now=Date.now()){if(!p)return 'Đang tải giờ hoạt động…';if(!/^\d{4}-\d{2}-\d{2}$/.test(day)||!Number.isFinite(+new Date(day+'T00:00:00Z'))||new Date(day+'T00:00:00Z').toISOString().slice(0,10)!==day||!Number.isInteger(start)||!Number.isInteger(end))return 'Chọn ngày và giờ sử dụng.';if(end<=start)return 'Giờ kết thúc phải sau giờ bắt đầu.';if(start<p.openMinute||end>p.closeMinute)return 'Chọn giờ trong khoảng '+formatTime(p.openMinute)+'–'+formatTime(p.closeMinute)+'.';if(start%p.stepMinutes||end%p.stepMinutes)return 'Chọn giờ theo bước '+p.stepMinutes+' phút.';if(end-start<p.minMinutes||(!p.unlimitedBooking&&end-start>p.maxSeatMinutes))return p.unlimitedBooking?`Thời lượng tối thiểu ${p.minMinutes} phút.`:`Thời lượng từ ${p.minMinutes} đến ${p.maxSeatMinutes} phút.`;if(!p.weekdays.includes(new Date(day+'T00:00:00Z').getUTCDay()))return 'Ngày này không hoạt động.';const timestamp=+new Date(day+'T00:00:00+07:00')+start*60000;if(day<localDay(now))return 'Không thể đăng ký ngày đã qua.';if(!p.unlimitedBooking&&timestamp>now+p.advanceDays*86400000)return 'Chỉ đăng ký trước tối đa '+p.advanceDays+' ngày.';return '';}
 export function conflicts(id,start,end,reservations,p){return reservations.filter(r=>r.seatId===id&&r.resourceType==='seat'&&r.startMinute<end+p.bufferMinutes&&r.endMinute>start-p.bufferMinutes)}

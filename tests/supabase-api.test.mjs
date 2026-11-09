@@ -34,4 +34,33 @@ await test('Supabase: server-side permissions, private schema, guest booking, at
  const {MEETING_TABLE}=await import('../public/booking/resources.js');const members=Array.from({length:6},(_,i)=>({id:'group-'+i,source:'chair-'+(45+i),bookable:true,position:[20+Math.cos(i*Math.PI/3),0,20+Math.sin(i*Math.PI/3)],rotation:[0,0,0],scale:[1,1,1]}));const grouped={version:1,objects:[...data.objects,{id:MEETING_TABLE,source:'hex-3',position:[20,0,20],rotation:[0,0,0],scale:[1,1,1]},...members]};await ok('/api/space',{name:'UII cluster',data:grouped,revision:2},{admin:true});assert.equal((await call('/api/bookings',{...body,requestId:'single-group',seatIds:[members[0].id],attendees:1},{visitor})).status,409);await ok('/api/bookings',{...body,requestId:'cluster',seatIds:[MEETING_TABLE],attendees:6},{visitor});await ok('/api/admin/bookings',{action:'approve',id:'cluster'},{admin:true});assert.equal((await call('/api/bookings',{...body,requestId:'cluster-overlap',seatIds:[MEETING_TABLE],attendees:6},{visitor:guest2})).status,409);
  await db.exec('SET ROLE anon');await assert.rejects(db.query('SELECT * FROM uii.seat_bookings'),/permission denied/);await db.exec('RESET ROLE');
 });
+await test('Regression: malformed inputs, impossible policy, pagination and full-history search',async()=>{
+ assert.equal((await call('/api/admin/auth',null)).status,400);
+ const cfg=(await ok('/api/settings')).body;
+ assert.equal((await call('/api/settings',{revision:cfg.revision,policy:{...cfg.policy,openMinute:420,closeMinute:450,minMinutes:60}},{admin:true})).status,400);
+ const object={id:'chair-regression',position:[0,0,0],rotation:[0,0,0],scale:[1,1,1]};
+ for(const objects of [[null],[object,object],[{...object,id:''}]]){
+  assert.equal((await call('/api/layouts',{name:'Invalid draft',data:{version:1,objects}},{admin:true})).status,400);
+ }
+ const invalidDay=await call('/api/admin/bookings?day=2026-02-30',undefined,{admin:true});assert.equal(invalidDay.status,400);
+ assert.equal((await call('/api/admin/bookings?offset=-1',undefined,{admin:true})).status,400);
+ // More than the former silent 300-row cap; use cloned synthetic rows only in local PostgreSQL.
+ await db.exec("INSERT INTO uii.seat_bookings SELECT (jsonb_populate_record(NULL::uii.seat_bookings,to_jsonb(b)||jsonb_build_object('id','pagination-'||n,'display_name','Archive QA '||n,'subject',CASE WHEN n=1 THEN 'Unique archive needle' ELSE 'Pagination' END,'created_at','2020-01-01T00:00:00Z'))).* FROM (SELECT * FROM uii.seat_bookings LIMIT 1) b CROSS JOIN generate_series(1,305) n");
+ const seen=[];let offset=0;for(let i=0;i<10;i++){
+  const page=(await ok('/api/admin/bookings?offset='+offset,undefined,{admin:true})).body;
+  assert.ok(page.bookings.length<=100);seen.push(...page.bookings.map(b=>b.id));if(!page.hasMore)break;offset+=page.limit;
+ }
+ assert.equal(new Set(seen).size,seen.length);assert.ok(seen.includes('pagination-1'));assert.ok(seen.includes('pagination-305'));
+ const search=(await ok('/api/admin/bookings?search=unique%20archive%20needle',undefined,{admin:true})).body;assert.deepEqual(search.bookings.map(b=>b.id),['pagination-1']);
+});
+await test('Regression: repeated booking is atomic if a later week conflicts',async()=>{
+ const visitor=(await ok('/api/bookings?day='+new Date(Date.now()+86400000).toISOString().slice(0,10))).visitor;
+ const {MEETING_TABLE}=await import('../public/booking/resources.js');
+ const days=[14,21,28].map(n=>new Date(Date.now()+n*86400000).toISOString().slice(0,10));
+ const base={resourceType:'seat',seatIds:[MEETING_TABLE],attendees:6,displayName:'Local recurrence QA',organization:'QA',groupType:'other',email:'qa@example.com',phone:'0000000000',leader:'QA',subject:'Atomic recurrence',description:'',startMinute:900,endMinute:960};
+ await ok('/api/bookings',{...base,requestId:'series-blocker',day:days[1]},{visitor});await ok('/api/admin/bookings',{id:'series-blocker',action:'approve'},{admin:true});
+ const occurrences=days.map((day,i)=>({requestId:'atomic-series-'+i,day,startMinute:900,endMinute:960}));
+ const conflict=await call('/api/bookings',{...base,requestId:occurrences[0].requestId,day:days[0],occurrences},{visitor});assert.equal(conflict.status,409);assert.equal(conflict.body.conflictDay,days[1]);
+ assert.equal((await db.query("SELECT id FROM uii.seat_bookings WHERE id LIKE 'atomic-series-%'")).rows.length,0);
+});
 await db.close();globalThis.fetch=realFetch;

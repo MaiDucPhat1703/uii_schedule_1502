@@ -152,6 +152,7 @@ async function POST(r) {
   } catch {
     return json({ error: "D\u1EEF li\u1EC7u kh\xF4ng h\u1EE3p l\u1EC7." }, 400);
   }
+  if (!b || typeof b !== "object" || Array.isArray(b)) return json({ error: "D\u1EEF li\u1EC7u kh\xF4ng h\u1EE3p l\u1EC7." }, 400);
   if (b.action === "logout") {
     const token = r.headers.get("authorization");
     if (token) await auth("logout", {}, token);
@@ -213,7 +214,7 @@ function bookingResources(data) {
 }
 
 // app/booking-policy.ts
-var defaults = { roomsOpen: true, seatsOpen: false, openMinute: 420, closeMinute: 1320, minMinutes: 30, maxRoomMinutes: 240, maxSeatMinutes: 480, stepMinutes: 15, advanceDays: 90, bufferMinutes: 0, weekdays: [0, 1, 2, 3, 4, 5, 6], notice: "\u0110\u0103ng k\xFD \u0111\u01B0\u1EE3c chuy\u1EC3n \u0111\u1EBFn admin duy\u1EC7t. Sau khi g\u1EEDi, ng\u01B0\u1EDDi \u0111\u0103ng k\xFD kh\xF4ng t\u1EF1 s\u1EEDa ho\u1EB7c h\u1EE7y; vui l\xF2ng li\xEAn h\u1EC7 ng\u01B0\u1EDDi qu\u1EA3n l\xFD khi c\u1EA7n thay \u0111\u1ED5i." };
+var defaults = { roomsOpen: true, seatsOpen: false, openMinute: 420, closeMinute: 1320, minMinutes: 30, maxRoomMinutes: 240, maxSeatMinutes: 480, stepMinutes: 15, advanceDays: 90, unlimitedBooking: true, bufferMinutes: 0, weekdays: [0, 1, 2, 3, 4, 5, 6], notice: "\u0110\u0103ng k\xFD \u0111\u01B0\u1EE3c chuy\u1EC3n \u0111\u1EBFn admin duy\u1EC7t. Sau khi g\u1EEDi, ng\u01B0\u1EDDi \u0111\u0103ng k\xFD kh\xF4ng t\u1EF1 s\u1EEDa ho\u1EB7c h\u1EE7y; vui l\xF2ng li\xEAn h\u1EC7 ng\u01B0\u1EDDi qu\u1EA3n l\xFD khi c\u1EA7n thay \u0111\u1ED5i." };
 var localDay = () => (/* @__PURE__ */ new Date()).toLocaleDateString("en-CA", { timeZone: "Asia/Ho_Chi_Minh" });
 function dayValid(day) {
   return typeof day === "string" && /^\d{4}-\d{2}-\d{2}$/.test(day) && Number.isFinite(+/* @__PURE__ */ new Date(day + "T00:00:00Z")) && (/* @__PURE__ */ new Date(day + "T00:00:00Z")).toISOString().slice(0, 10) === day;
@@ -228,7 +229,7 @@ async function seedRooms() {
   await env.DB.batch([["room-internal", "B1.1502 \xB7 Internal Meeting", 0], ["room-pod-1", "B1.1502 \xB7 Office Pod 01", 6], ["room-pod-2", "B1.1502 \xB7 Office Pod 02", 6]].map(([id, name, capacity]) => env.DB.prepare("INSERT INTO meeting_rooms (id,name,campus,capacity,accepting,revision) VALUES (?,?,?,?,1,1) ON CONFLICT(id) DO NOTHING").bind(id, name, campus, capacity)));
 }
 function policyValid(p) {
-  return p && typeof p.roomsOpen === "boolean" && typeof p.seatsOpen === "boolean" && [p.openMinute, p.closeMinute, p.minMinutes, p.maxRoomMinutes, p.maxSeatMinutes, p.advanceDays, p.bufferMinutes].every(Number.isInteger) && p.openMinute >= 0 && p.closeMinute <= 1440 && p.closeMinute > p.openMinute && p.minMinutes >= 15 && p.maxRoomMinutes >= p.minMinutes && p.maxRoomMinutes <= 720 && p.maxSeatMinutes >= p.minMinutes && p.maxSeatMinutes <= 720 && [15, 30, 60].includes(p.stepMinutes) && p.minMinutes % p.stepMinutes === 0 && p.openMinute % p.stepMinutes === 0 && p.closeMinute % p.stepMinutes === 0 && p.advanceDays >= 1 && p.advanceDays <= 366 && p.bufferMinutes >= 0 && p.bufferMinutes <= 60 && Array.isArray(p.weekdays) && p.weekdays.length > 0 && p.weekdays.every((d) => Number.isInteger(d) && d >= 0 && d <= 6) && typeof p.notice === "string" && p.notice.length <= 1e3;
+  return p && typeof p.roomsOpen === "boolean" && typeof p.seatsOpen === "boolean" && typeof p.unlimitedBooking === "boolean" && [p.openMinute, p.closeMinute, p.minMinutes, p.maxRoomMinutes, p.maxSeatMinutes, p.advanceDays, p.bufferMinutes].every(Number.isInteger) && p.openMinute >= 0 && p.closeMinute <= 1440 && p.closeMinute > p.openMinute && p.minMinutes >= 15 && p.minMinutes <= p.closeMinute - p.openMinute && p.maxRoomMinutes >= p.minMinutes && p.maxRoomMinutes <= 720 && p.maxSeatMinutes >= p.minMinutes && p.maxSeatMinutes <= 1440 && [15, 30, 60].includes(p.stepMinutes) && p.minMinutes % p.stepMinutes === 0 && p.openMinute % p.stepMinutes === 0 && p.closeMinute % p.stepMinutes === 0 && (p.unlimitedBooking || p.advanceDays >= 1 && p.advanceDays <= 366) && p.bufferMinutes >= 0 && p.bufferMinutes <= 60 && Array.isArray(p.weekdays) && p.weekdays.length > 0 && p.weekdays.every((d) => Number.isInteger(d) && d >= 0 && d <= 6) && typeof p.notice === "string" && p.notice.length <= 1e3;
 }
 function policyError(p, day, start, end, type) {
   if (!(type === "room" ? p.roomsOpen : p.seatsOpen)) return type === "room" ? "Hi\u1EC7n \u0111\xE3 \u0111\xF3ng nh\u1EADn \u0111\u0103ng k\xFD ph\xF2ng." : "Hi\u1EC7n \u0111\xE3 \u0111\xF3ng nh\u1EADn \u0111\u1EB7t gh\u1EBF.";
@@ -236,16 +237,18 @@ function policyError(p, day, start, end, type) {
   if (!Number.isInteger(start) || !Number.isInteger(end) || start % p.stepMinutes || end % p.stepMinutes) return "Gi\u1EDD b\u1EAFt \u0111\u1EA7u / k\u1EBFt th\xFAc c\u1EA7n theo b\u01B0\u1EDBc " + p.stepMinutes + " ph\xFAt.";
   if (start < p.openMinute || end > p.closeMinute || end <= start) return "Th\u1EDDi gian ph\u1EA3i n\u1EB1m trong gi\u1EDD ho\u1EA1t \u0111\u1ED9ng v\xE0 gi\u1EDD k\u1EBFt th\xFAc sau gi\u1EDD b\u1EAFt \u0111\u1EA7u.";
   const length = end - start, max = type === "room" ? p.maxRoomMinutes : p.maxSeatMinutes;
-  if (length < p.minMinutes || length > max) return `Th\u1EDDi l\u01B0\u1EE3ng ph\u1EA3i t\u1EEB ${p.minMinutes} \u0111\u1EBFn ${max} ph\xFAt.`;
+  if (length < p.minMinutes || !p.unlimitedBooking && length > max) return p.unlimitedBooking ? `Th\u1EDDi l\u01B0\u1EE3ng t\u1ED1i thi\u1EC3u ${p.minMinutes} ph\xFAt.` : `Th\u1EDDi l\u01B0\u1EE3ng ph\u1EA3i t\u1EEB ${p.minMinutes} \u0111\u1EBFn ${max} ph\xFAt.`;
   if (!p.weekdays.includes((/* @__PURE__ */ new Date(day + "T00:00:00Z")).getUTCDay())) return "Ng\xE0y n\xE0y kh\xF4ng n\u1EB1m trong l\u1ECBch ho\u1EA1t \u0111\u1ED9ng.";
+  if (day < localDay()) return "Kh\xF4ng th\u1EC3 \u0111\u0103ng k\xFD ng\xE0y \u0111\xE3 qua.";
   const begins = +/* @__PURE__ */ new Date(day + "T00:00:00+07:00") + start * 6e4;
-  if (begins > Date.now() + p.advanceDays * 864e5) return "Ch\u1EC9 \u0111\u0103ng k\xFD tr\u01B0\u1EDBc t\u1ED1i \u0111a " + p.advanceDays + " ng\xE0y.";
+  if (!p.unlimitedBooking && begins > Date.now() + p.advanceDays * 864e5) return "Ch\u1EC9 \u0111\u0103ng k\xFD tr\u01B0\u1EDBc t\u1ED1i \u0111a " + p.advanceDays + " ng\xE0y.";
   return "";
 }
 
 // app/api/bookings/route.ts
 var dynamic = "force-dynamic";
 var response = (b, s = 200, cookie = null) => Response.json(b, { status: s, headers: { "Cache-Control": "no-store", ...cookie ? { "Set-Cookie": cookie } : {} } });
+var conflictMessage = "C\xF3 \xEDt nh\u1EA5t m\u1ED9t ng\xE0y trong chu\u1ED7i b\u1ECB tr\xF9ng l\u1ECBch. Ch\u01B0a l\u01B0u l\u01B0\u1EE3t n\xE0o; h\xE3y \u0111\u1ED5i ng\xE0y ho\u1EB7c khung gi\u1EDD.";
 async function GET2(r) {
   const u = await visitor(r), day = new URL(r.url).searchParams.get("day");
   if (!dayValid(day)) return response({ error: "Ng\xE0y kh\xF4ng h\u1EE3p l\u1EC7." }, 400, u.cookie);
@@ -263,48 +266,64 @@ async function POST2(r) {
     return json7({ error: "D\u1EEF li\u1EC7u kh\xF4ng h\u1EE3p l\u1EC7." }, 400);
   }
   if (b?.action) return json7({ error: "Ng\u01B0\u1EDDi \u0111\u0103ng k\xFD kh\xF4ng \u0111\u01B0\u1EE3c t\u1EF1 s\u1EEDa ho\u1EB7c h\u1EE7y. Vui l\xF2ng li\xEAn h\u1EC7 admin." }, 403);
-  const requested = Array.isArray(b?.seatIds) ? b.seatIds : [b?.seatId];
+  if (!b || typeof b !== "object") return json7({ error: "D\u1EEF li\u1EC7u \u0111\u0103ng k\xFD kh\xF4ng h\u1EE3p l\u1EC7." }, 400);
+  const requested = Array.isArray(b.seatIds) ? b.seatIds : [b.seatId];
   if (!requested.length || requested.length > 36 || requested.some((id) => typeof id !== "string" || !id.length || id.length > 100) || new Set(requested).size !== requested.length) return json7({ error: "Ch\u1ECDn t\u1EEB 1 \u0111\u1EBFn 36 gh\u1EBF kh\xE1c nhau." }, 400);
   const seatIds = [...requested].sort();
   b.seatId = seatIds[0];
-  const type = b?.resourceType || "seat";
+  const type = b.resourceType || "seat";
   if (type !== "seat") return json7({ error: "H\u1EC7 th\u1ED1ng hi\u1EC7n ch\u1EC9 nh\u1EADn \u0111\u1EB7t ch\u1ED7 ng\u1ED3i theo khung gi\u1EDD." }, 400);
-  if (!b || typeof b !== "object" || !["seat", "room"].includes(type) || typeof b.requestId !== "string" || !b.requestId.length || b.requestId.length > 80 || typeof b.seatId !== "string" || !dayValid(b.day) || !Number.isInteger(b.attendees) || b.attendees < 1 || b.attendees > 1e3 || !["startup", "faculty", "staff", "other"].includes(b.groupType)) return json7({ error: "Ch\u1ECDn lo\u1EA1i \u0111\u0103ng k\xFD, ph\xF2ng/ch\u1ED7 ng\u1ED3i, ng\xE0y, nh\xF3m \u0111\u1ED1i t\u01B0\u1EE3ng v\xE0 s\u1ED1 ng\u01B0\u1EDDi h\u1EE3p l\u1EC7." }, 400);
+  if (typeof b.attendees !== "number" || !Number.isInteger(b.attendees) || b.attendees < 1 || b.attendees > 1e3 || !["startup", "faculty", "staff", "other"].includes(b.groupType)) return json7({ error: "Ch\u1ECDn nh\xF3m \u0111\u1ED1i t\u01B0\u1EE3ng v\xE0 s\u1ED1 ng\u01B0\u1EDDi h\u1EE3p l\u1EC7." }, 400);
   for (const [key2, max] of [["displayName", 255], ["organization", 255], ["email", 255], ["phone", 20], ["leader", 255], ["subject", 255]]) if (typeof b[key2] !== "string" || !b[key2].trim() || b[key2].length > max) return json7({ error: "Vui l\xF2ng \u0111i\u1EC1n \u0111\u1EE7 h\u1ECD t\xEAn, \u0111\u01A1n v\u1ECB, email, \u0111i\u1EC7n tho\u1EA1i, ng\u01B0\u1EDDi ch\u1EE7 tr\xEC v\xE0 ti\xEAu \u0111\u1EC1." }, 400);
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(b.email) || !/^\+?[\d\s().-]{8,20}$/.test(b.phone) || typeof b.description !== "string" || b.description.length > 2e3) return json7({ error: "Email, s\u1ED1 \u0111i\u1EC7n tho\u1EA1i ho\u1EB7c m\xF4 t\u1EA3 kh\xF4ng h\u1EE3p l\u1EC7." }, 400);
-  const prior = await env.DB.prepare("SELECT user_id,seat_id,seat_ids,day,COALESCE(start_minute,start_slot*30) startMinute,COALESCE(end_minute,end_slot*30) endMinute,status FROM seat_bookings WHERE id=?").bind(b.requestId).first();
-  if (prior) {
-    if (prior.user_id === u.userId && JSON.stringify(prior.seat_ids ? JSON.parse(prior.seat_ids).sort() : [prior.seat_id]) === JSON.stringify(seatIds) && prior.day === b.day && prior.startMinute === b.startMinute && prior.endMinute === b.endMinute) return json7({ ok: true, id: b.requestId, status: prior.status });
-    return json7({ error: "Y\xEAu c\u1EA7u \u0111\xE3 \u0111\u01B0\u1EE3c x\u1EED l\xFD; vui l\xF2ng t\u1EA3i l\u1EA1i." }, 409);
+  const occurrences = Array.isArray(b.occurrences) ? b.occurrences : [{ requestId: b.requestId, day: b.day, startMinute: b.startMinute, endMinute: b.endMinute }];
+  if (!occurrences.length || occurrences.length > 52) return json7({ error: "M\u1ED9t l\u01B0\u1EE3t \u0111\u1EB7t l\u1EB7p t\u1ED1i \u0111a 52 l\u1EA7n h\xE0ng tu\u1EA7n." }, 400);
+  const ids = /* @__PURE__ */ new Set(), days = /* @__PURE__ */ new Set();
+  for (const occurrence of occurrences) {
+    if (!occurrence || typeof occurrence.requestId !== "string" || !occurrence.requestId.length || occurrence.requestId.length > 80 || ids.has(occurrence.requestId) || !dayValid(occurrence.day) || days.has(occurrence.day) || !Number.isInteger(occurrence.startMinute) || !Number.isInteger(occurrence.endMinute)) return json7({ error: "Danh s\xE1ch ng\xE0y l\u1EB7p kh\xF4ng h\u1EE3p l\u1EC7 ho\u1EB7c b\u1ECB tr\xF9ng." }, 400);
+    ids.add(occurrence.requestId);
+    days.add(occurrence.day);
   }
-  const config2 = await settings(), error = policyError(config2.policy, b.day, b.startMinute, b.endMinute, type);
-  if (error) return json7({ error }, 400);
-  let name = "", campus = "C\u01A1 s\u1EDF B \xB7 279 Nguy\u1EC5n Tri Ph\u01B0\u01A1ng \xB7 T\u1EA7ng 15", resourceRevision = 0, conflictIds = [];
+  const config2 = await settings();
+  for (const occurrence of occurrences) {
+    const error = policyError(config2.policy, occurrence.day, occurrence.startMinute, occurrence.endMinute, type);
+    if (error) return json7({ error: occurrence.day + ": " + error }, 400);
+  }
+  const pending = [];
+  for (const occurrence of occurrences) {
+    const prior = await env.DB.prepare("SELECT user_id,seat_id,seat_ids,day,COALESCE(start_minute,start_slot*30) startMinute,COALESCE(end_minute,end_slot*30) endMinute,status FROM seat_bookings WHERE id=?").bind(occurrence.requestId).first();
+    if (prior) {
+      const priorSeats = (prior.seat_ids ? JSON.parse(prior.seat_ids) : [prior.seat_id]).sort();
+      if (prior.user_id !== u.userId || JSON.stringify(priorSeats) !== JSON.stringify(seatIds) || prior.day !== occurrence.day || prior.startMinute !== occurrence.startMinute || prior.endMinute !== occurrence.endMinute) return json7({ error: "M\u1ED9t y\xEAu c\u1EA7u trong chu\u1ED7i \u0111\xE3 t\u1ED3n t\u1EA1i v\u1EDBi n\u1ED9i dung kh\xE1c. Vui l\xF2ng t\u1EA3i l\u1EA1i." }, 409);
+    } else pending.push(occurrence);
+  }
+  if (!pending.length) return json7({ ok: true, id: occurrences[0].requestId, status: "pending", count: occurrences.length, alreadySaved: true });
   const space = await env.DB.prepare("SELECT data,revision FROM spatial_spaces WHERE id=?").bind("main").first();
-  const resources = space ? bookingResources(JSON.parse(space.data)) : [];
+  if (!space) return json7({ error: "S\u01A1 \u0111\u1ED3 ch\u1ED7 ng\u1ED3i ch\u01B0a \u0111\u01B0\u1EE3c \xE1p d\u1EE5ng." }, 409);
+  const resources = bookingResources(JSON.parse(space.data));
   const chosen = seatIds.map((id) => resources.find((o) => o.id === id));
   if (chosen.some((o) => !o)) return json7({ error: "C\xF3 gh\u1EBF kh\xF4ng c\xF2n m\u1EDF \u0111\u1EB7t ri\xEAng. Ch\u1ECDn l\u1EA1i gh\u1EBF l\u1EBB ho\u1EB7c B\xE0n 7 tr\xEAn s\u01A1 \u0111\u1ED3." }, 409);
   if (chosen.length > 1 && chosen.some((o) => o.capacity !== 1)) return json7({ error: "B\xE0n 7 \u0111\u01B0\u1EE3c \u0111\u1EB7t ri\xEAng nguy\xEAn 6 ch\u1ED7; kh\xF4ng gh\xE9p v\u1EDBi gh\u1EBF l\u1EBB." }, 400);
   const capacity = chosen.reduce((sum, o) => sum + o.capacity, 0);
   if (b.attendees !== capacity) return json7({ error: "S\u1ED1 ch\u1ED7 ph\u1EA3i \u0111\xFAng v\u1EDBi to\xE0n b\u1ED9 gh\u1EBF \u0111\xE3 ch\u1ECDn (" + capacity + " ch\u1ED7)." }, 400);
-  conflictIds = [...new Set(chosen.flatMap((o) => [o.id, ...o.members]))];
-  name = chosen.map((o) => o.capacity === 6 ? o.label : o.code).join("; ");
-  resourceRevision = Number(space.revision);
-  const count = await env.DB.prepare("SELECT COUNT(*) n FROM seat_bookings WHERE user_id=? AND status IN ('pending','active') AND day>=?").bind(u.userId, localDay()).first();
-  if (Number(count?.n) >= 10) return json7({ error: "B\u1EA1n \u0111ang c\xF3 10 l\u01B0\u1EE3t ch\u1EDD / \u0111\xE3 duy\u1EC7t. Vui l\xF2ng li\xEAn h\u1EC7 admin tr\u01B0\u1EDBc khi \u0111\u0103ng k\xFD th\xEAm." }, 429);
-  const buffer = config2.policy.bufferMinutes, resourceGuard = "EXISTS (SELECT 1 FROM spatial_spaces WHERE id='main' AND revision=?)";
-  const resourceArgs = [resourceRevision];
-  const columns = "id,user_id,seat_id,seat_label,day,start_slot,end_slot,display_name,organization,status,created_at,email,phone,leader,subject,description,group_type,attendees,resource_type,campus,start_minute,end_minute,seat_ids";
-  const values = [b.requestId, u.userId, b.seatId, name, b.day, b.startMinute / 30, b.endMinute / 30, b.displayName.trim(), b.organization.trim(), "pending", (/* @__PURE__ */ new Date()).toISOString(), b.email.trim(), b.phone.trim(), b.leader.trim(), b.subject.trim(), b.description.trim(), b.groupType, b.attendees, type, campus, b.startMinute, b.endMinute, JSON.stringify(seatIds)];
-  const query = `INSERT INTO seat_bookings (${columns}) SELECT ${values.map(() => "?").join(",")} WHERE EXISTS (SELECT 1 FROM booking_settings WHERE id='main' AND revision=?) AND ${resourceGuard} AND NOT EXISTS (SELECT 1 FROM seat_bookings WHERE EXISTS (SELECT 1 FROM json_each(COALESCE(seat_ids,json_array(seat_id))) held WHERE held.value IN (${conflictIds.map(() => "?").join(",")})) AND day=? AND status='active' AND COALESCE(start_minute,start_slot*30) < ? AND COALESCE(end_minute,end_slot*30) > ?)`;
-  try {
-    const result = await env.DB.prepare(query).bind(...values, config2.revision, ...resourceArgs, ...conflictIds, b.day, b.endMinute + buffer, b.startMinute - buffer).run();
-    if (!result.meta.changes) return json7({ error: "C\xF3 gh\u1EBF v\u1EEBa \u0111\u01B0\u1EE3c \u0111\u1EB7t ho\u1EB7c c\u1EA5u h\xECnh \u0111\xE3 thay \u0111\u1ED5i. Ch\u01B0a l\u01B0u gh\u1EBF n\xE0o trong l\u01B0\u1EE3t n\xE0y; h\xE3y ki\u1EC3m tra l\u1EA1i to\xE0n b\u1ED9 nh\xF3m." }, 409);
-    return json7({ ok: true, id: b.requestId, status: "pending" }, 200);
-  } catch (e) {
-    if (/unique|constraint/i.test(String(e))) return json7({ error: "Y\xEAu c\u1EA7u n\xE0y \u0111\xE3 \u0111\u01B0\u1EE3c g\u1EEDi. H\xE3y c\u1EADp nh\u1EADt danh s\xE1ch." }, 409);
-    return json7({ error: "Ch\u01B0a l\u01B0u \u0111\u01B0\u1EE3c \u0111\u0103ng k\xFD. Vui l\xF2ng th\u1EED l\u1EA1i." }, 500);
+  const conflictIds = [...new Set(chosen.flatMap((o) => [o.id, ...o.members]))];
+  const name = chosen.map((o) => o.capacity === 6 ? o.label : o.code).join("; ");
+  const resourceRevision = Number(space.revision), buffer = config2.policy.bufferMinutes;
+  for (const occurrence of pending) {
+    const placeholders = conflictIds.map(() => "?").join(",");
+    const conflict = await env.DB.prepare(`SELECT id FROM seat_bookings WHERE EXISTS (SELECT 1 FROM json_each(COALESCE(seat_ids,json_array(seat_id))) held WHERE held.value IN (${placeholders})) AND day=? AND status='active' AND COALESCE(start_minute,start_slot*30) < ? AND COALESCE(end_minute,end_slot*30) > ? LIMIT 1`).bind(...conflictIds, occurrence.day, occurrence.endMinute + buffer, occurrence.startMinute - buffer).first();
+    if (conflict) return json7({ error: conflictMessage, conflictDay: occurrence.day }, 409);
   }
+  const statements = pending.map((occurrence) => {
+    const columns = "id,user_id,seat_id,seat_label,day,start_slot,end_slot,display_name,organization,status,created_at,email,phone,leader,subject,description,group_type,attendees,resource_type,campus,start_minute,end_minute,seat_ids";
+    const values = [occurrence.requestId, u.userId, b.seatId, name, occurrence.day, occurrence.startMinute / 30, occurrence.endMinute / 30, b.displayName.trim(), b.organization.trim(), "pending", (/* @__PURE__ */ new Date()).toISOString(), b.email.trim(), b.phone.trim(), b.leader.trim(), b.subject.trim(), b.description.trim(), b.groupType, b.attendees, type, "C\u01A1 s\u1EDF B \xB7 279 Nguy\u1EC5n Tri Ph\u01B0\u01A1ng \xB7 T\u1EA7ng 15", occurrence.startMinute, occurrence.endMinute, JSON.stringify(seatIds)];
+    const placeholders = conflictIds.map(() => "?").join(",");
+    const query = `INSERT INTO seat_bookings (${columns}) SELECT ${values.map(() => "?").join(",")} WHERE EXISTS (SELECT 1 FROM booking_settings WHERE id='main' AND revision=?) AND EXISTS (SELECT 1 FROM spatial_spaces WHERE id='main' AND revision=?) AND NOT EXISTS (SELECT 1 FROM seat_bookings WHERE EXISTS (SELECT 1 FROM json_each(COALESCE(seat_ids,json_array(seat_id))) held WHERE held.value IN (${placeholders})) AND day=? AND status='active' AND COALESCE(start_minute,start_slot*30) < ? AND COALESCE(end_minute,end_slot*30) > ?)`;
+    return env.DB.prepare(query).bind(...values, config2.revision, resourceRevision, ...conflictIds, occurrence.day, occurrence.endMinute + buffer, occurrence.startMinute - buffer);
+  });
+  const results = await env.DB.batch(statements);
+  if (results.some((result) => Number(result.meta?.changes) !== 1)) throw new Error("BOOKING_CONFLICT");
+  return json7({ ok: true, id: occurrences[0].requestId, status: "pending", count: occurrences.length, created: pending.length });
 }
 
 // app/api/admin/bookings/route.ts
@@ -319,19 +338,25 @@ var json2 = (b, s = 200) => Response.json(b, { status: s, headers: { "Cache-Cont
 var editToken = (row) => JSON.stringify(Object.fromEntries(Object.entries(row).filter(([k]) => k !== "edit_token").sort(([a], [b]) => a.localeCompare(b))));
 async function GET3(r) {
   if (!await getAdmin(r)) return json2({ error: "Vui l\xF2ng \u0111\u0103ng nh\u1EADp admin." }, 401);
-  const url = new URL(r.url), day = url.searchParams.get("day"), status = url.searchParams.get("status");
+  const url = new URL(r.url), day = url.searchParams.get("day"), status = url.searchParams.get("status"), query = (url.searchParams.get("search") || "").trim().toLowerCase();
+  const offset = Number(url.searchParams.get("offset") || 0), limit = 100;
+  if (!Number.isSafeInteger(offset) || offset < 0 || query.length > 255 || day && !dayValid(day) || status && !["pending", "active", "rejected", "cancelled"].includes(status)) return json2({ error: "B\u1ED9 l\u1ECDc kh\xF4ng h\u1EE3p l\u1EC7." }, 400);
   const conditions = ["resource_type='seat'"], args = [];
-  if (day && /^\d{4}-\d{2}-\d{2}$/.test(day)) {
+  if (day) {
     conditions.push("day=?");
     args.push(day);
   }
-  if (status && ["pending", "active", "rejected", "cancelled"].includes(status)) {
+  if (status) {
     conditions.push("status=?");
     args.push(status);
   }
-  const rows = await env.DB.prepare("SELECT * FROM seat_bookings WHERE " + conditions.join(" AND ") + " ORDER BY created_at DESC LIMIT 300").bind(...args).all();
+  if (query) {
+    conditions.push("position(? in lower(concat_ws(' ',display_name,organization,seat_label,subject,email,phone,id)))>0");
+    args.push(query);
+  }
+  const rows = await env.DB.prepare("SELECT * FROM seat_bookings WHERE " + conditions.join(" AND ") + " ORDER BY created_at DESC,id DESC LIMIT ? OFFSET ?").bind(...args, limit + 1, offset).all();
   const totals = await env.DB.prepare("SELECT status,COUNT(*) n FROM seat_bookings WHERE resource_type='seat' GROUP BY status").all();
-  return json2({ bookings: rows.results.map((b) => ({ ...b, edit_token: editToken(b) })), totals: totals.results });
+  return json2({ bookings: rows.results.slice(0, limit).map((b) => ({ ...b, edit_token: editToken(b) })), totals: totals.results, offset, limit, hasMore: rows.results.length > limit });
 }
 async function POST3(r) {
   if (!await getAdmin(r)) return json2({ error: "Vui l\xF2ng \u0111\u0103ng nh\u1EADp admin." }, 401);
@@ -435,8 +460,10 @@ async function POST4(request) {
     return json3({ error: "D\u1EEF li\u1EC7u kh\xF4ng h\u1EE3p l\u1EC7." }, 400);
   }
   if (!b || typeof b.name !== "string" || !b.name.trim() || b.name.length > 120 || !b.data || b.data.version !== 1 || !Array.isArray(b.data.objects) || b.data.objects.length > 2e3) return json3({ error: "D\u1EEF li\u1EC7u b\u1EA3n v\u1EBD kh\xF4ng h\u1EE3p l\u1EC7." }, 400);
+  const ids = /* @__PURE__ */ new Set();
   for (const o of b.data.objects) {
-    if (typeof o.id !== "string" || o.id.length > 100 || !["position", "rotation", "scale"].every((k) => Array.isArray(o[k]) && o[k].length === 3 && o[k].every((v) => typeof v === "number" && Number.isFinite(v) && Math.abs(v) < 1e4)) || o.scale.some((v) => v <= 0 || v > 1e3)) return json3({ error: "Th\xF4ng s\u1ED1 v\u1EADt th\u1EC3 kh\xF4ng h\u1EE3p l\u1EC7." }, 400);
+    if (!o || typeof o.id !== "string" || !o.id.length || o.id.length > 100 || ids.has(o.id) || !["position", "rotation", "scale"].every((k) => Array.isArray(o[k]) && o[k].length === 3 && o[k].every((v) => typeof v === "number" && Number.isFinite(v) && Math.abs(v) < 1e4)) || o.scale.some((v) => v <= 0 || v > 1e3)) return json3({ error: "Th\xF4ng s\u1ED1 v\u1EADt th\u1EC3 kh\xF4ng h\u1EE3p l\u1EC7." }, 400);
+    ids.add(o.id);
   }
   const data = JSON.stringify(b.data);
   if (data.length > 2e6) return json3({ error: "B\u1EA3n l\u01B0u qu\xE1 l\u1EDBn." }, 413);
@@ -587,6 +614,8 @@ function createHandler(transaction, config2) {
         });
       });
     } catch (e) {
+      const message = String(e?.message || "");
+      if (message === "BOOKING_CONFLICT") return Response.json({ error: "C\xF3 l\u01B0\u1EE3t v\u1EEBa \u0111\u01B0\u1EE3c \u0111\u1EB7t ho\u1EB7c c\u1EA5u h\xECnh \u0111\xE3 thay \u0111\u1ED5i. Ch\u01B0a l\u01B0u chu\u1ED7i \u0111\u1EB7t l\u1EB7p; h\xE3y t\u1EA3i l\u1EA1i v\xE0 th\u1EED l\u1EA1i." }, { status: 409, headers });
       console.error("UII API failed", request.method, path, e?.code || "error");
       return Response.json({ error: "Ch\u01B0a x\u1EED l\xFD \u0111\u01B0\u1EE3c y\xEAu c\u1EA7u. Ki\u1EC3m tra c\u1EA5u h\xECnh Supabase v\xE0 th\u1EED l\u1EA1i." }, { status: 500, headers });
     }
