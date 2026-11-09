@@ -11,7 +11,7 @@ export async function GET(r:Request){
  const u=await visitor(r),day=new URL(r.url).searchParams.get('day');
  if(!dayValid(day))return response({error:'Ngày không hợp lệ.'},400,u.cookie);
  const rows=await env.DB!.prepare("SELECT seat_id,seat_ids,resource_type,COALESCE(start_minute,start_slot*30) startMinute,COALESCE(end_minute,end_slot*30) endMinute,user_id,status FROM seat_bookings WHERE day=? AND resource_type='seat' AND status='active'").bind(day).all();
- const mine=await env.DB!.prepare("SELECT id,seat_id,seat_ids,seat_label,day,COALESCE(start_minute,start_slot*30) start_minute,COALESCE(end_minute,end_slot*30) end_minute,display_name,organization,status,subject,leader,attendees,resource_type,admin_note FROM seat_bookings WHERE user_id=? AND day=? AND resource_type='seat' ORDER BY start_slot").bind(u.userId,day).all();
+ const mine=await env.DB!.prepare("SELECT id,status FROM seat_bookings WHERE user_id=? AND day=? AND resource_type='seat' ORDER BY created_at").bind(u.userId,day).all();
  return response({reservations:rows.results.flatMap((b:any)=>(b.seat_ids?JSON.parse(b.seat_ids):[b.seat_id]).map((seatId:string)=>({seatId,resourceType:b.resource_type,startMinute:b.startMinute,endMinute:b.endMinute,mine:b.user_id===u.userId,status:b.status}))),mine:mine.results},200,u.cookie);
 }
 
@@ -31,6 +31,7 @@ export async function POST(r:Request){
  for(const [key,max] of [['displayName',255],['organization',255],['email',255],['phone',20],['leader',255],['subject',255]] as const)if(typeof b[key]!=='string'||!b[key].trim()||b[key].length>max)return json({error:'Vui lòng điền đủ họ tên, đơn vị, email, điện thoại, người chủ trì và tiêu đề.'},400);
  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(b.email)||!/^\+?[\d\s().-]{8,20}$/.test(b.phone)||typeof b.description!=='string'||b.description.length>2000)return json({error:'Email, số điện thoại hoặc mô tả không hợp lệ.'},400);
 
+ if(b.occurrences!==undefined&&!Array.isArray(b.occurrences))return json({error:'Danh sách ngày lặp không hợp lệ.'},400);
  const occurrences=Array.isArray(b.occurrences)?b.occurrences:[{requestId:b.requestId,day:b.day,startMinute:b.startMinute,endMinute:b.endMinute}];
  if(!occurrences.length||occurrences.length>52)return json({error:'Một lượt đặt lặp tối đa 52 lần hàng tuần.'},400);
  const ids=new Set<string>(),days=new Set<string>();
@@ -51,6 +52,10 @@ export async function POST(r:Request){
   }else pending.push(occurrence);
  }
  if(!pending.length)return json({ok:true,id:occurrences[0].requestId,status:'pending',count:occurrences.length,alreadySaved:true});
+
+ // Durable per-visitor storage-abuse guard. Retries of saved IDs do not consume quota.
+ const recent=await env.DB!.prepare("SELECT COUNT(*) n FROM seat_bookings WHERE user_id=? AND created_at>=?").bind(u.userId,new Date(Date.now()-3600000).toISOString()).first();
+ if(Number(recent?.n||0)+pending.length>120){const limited=json({error:'Phiên này đã gửi nhiều lượt trong một giờ. Vui lòng đợi hoặc liên hệ quản lý.'},429);limited.headers.set('Retry-After','3600');return limited;}
 
  const space=await env.DB!.prepare('SELECT data,revision FROM spatial_spaces WHERE id=?').bind('main').first();
  if(!space)return json({error:'Sơ đồ chỗ ngồi chưa được áp dụng.'},409);

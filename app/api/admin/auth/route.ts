@@ -1,6 +1,6 @@
 import {env} from '../../../runtime.ts';import {getAdmin,sameOrigin} from '../../../admin-auth.ts';
 const json=(b:unknown,s=200)=>Response.json(b,{status:s});
-async function auth(path:string,body:any,token?:string,method='POST'){return fetch(env.SUPABASE_URL+'/auth/v1/'+path,{method,headers:{apikey:env.SUPABASE_ANON_KEY,'Content-Type':'application/json',...(token?{Authorization:token}:{})},body:JSON.stringify(body)})}
+async function auth(path:string,body:any,token?:string,method='POST'){return fetch(env.SUPABASE_URL+'/auth/v1/'+path,{method,headers:{apikey:env.SUPABASE_ANON_KEY,'Content-Type':'application/json',...(token?{Authorization:token}:{})},body:JSON.stringify(body),signal:AbortSignal.timeout(10000),redirect:'error',credentials:'omit'})}
 export async function GET(r:Request){const user=await getAdmin(r);return json({authenticated:!!user,username:user?.username})}
 export async function POST(r:Request){if(!sameOrigin(r))return json({error:'Yêu cầu không hợp lệ.'},403);let b:any;try{b=await r.json()}catch{return json({error:'Dữ liệu không hợp lệ.'},400)}
  if(!b||typeof b!=='object'||Array.isArray(b))return json({error:'Dữ liệu không hợp lệ.'},400);

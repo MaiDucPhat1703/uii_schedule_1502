@@ -106,7 +106,7 @@ async function sign(p) {
 }
 async function visitor(r) {
   const token = r.headers.get("x-visitor-token");
-  if (token) try {
+  if (token && token.length <= 2048) try {
     const [body, sig, ...extra] = token.split(".");
     if (!extra.length && await crypto.subtle.verify("HMAC", await key(), from64(sig), encoder.encode(body))) {
       const p = JSON.parse(new TextDecoder().decode(from64(body)));
@@ -122,8 +122,8 @@ async function getAdmin(r) {
   if (env.adminChecked) return env.admin ?? null;
   env.adminChecked = true;
   const bearer = r.headers.get("authorization");
-  if (!bearer?.startsWith("Bearer ")) return null;
-  const response2 = await fetch(env.SUPABASE_URL + "/auth/v1/user", { headers: { apikey: env.SUPABASE_ANON_KEY, Authorization: bearer } });
+  if (!bearer?.startsWith("Bearer ") || bearer.length > 8192) return null;
+  const response2 = await fetch(env.SUPABASE_URL + "/auth/v1/user", { headers: { apikey: env.SUPABASE_ANON_KEY, Authorization: bearer }, signal: AbortSignal.timeout(1e4), redirect: "error", credentials: "omit" });
   if (!response2.ok) return null;
   const user = await response2.json();
   if (typeof user.id !== "string") return null;
@@ -138,7 +138,7 @@ function sameOrigin(r) {
 // app/api/admin/auth/route.ts
 var json = (b, s = 200) => Response.json(b, { status: s });
 async function auth(path, body, token, method = "POST") {
-  return fetch(env.SUPABASE_URL + "/auth/v1/" + path, { method, headers: { apikey: env.SUPABASE_ANON_KEY, "Content-Type": "application/json", ...token ? { Authorization: token } : {} }, body: JSON.stringify(body) });
+  return fetch(env.SUPABASE_URL + "/auth/v1/" + path, { method, headers: { apikey: env.SUPABASE_ANON_KEY, "Content-Type": "application/json", ...token ? { Authorization: token } : {} }, body: JSON.stringify(body), signal: AbortSignal.timeout(1e4), redirect: "error", credentials: "omit" });
 }
 async function GET(r) {
   const user = await getAdmin(r);
@@ -253,7 +253,7 @@ async function GET2(r) {
   const u = await visitor(r), day = new URL(r.url).searchParams.get("day");
   if (!dayValid(day)) return response({ error: "Ng\xE0y kh\xF4ng h\u1EE3p l\u1EC7." }, 400, u.cookie);
   const rows = await env.DB.prepare("SELECT seat_id,seat_ids,resource_type,COALESCE(start_minute,start_slot*30) startMinute,COALESCE(end_minute,end_slot*30) endMinute,user_id,status FROM seat_bookings WHERE day=? AND resource_type='seat' AND status='active'").bind(day).all();
-  const mine = await env.DB.prepare("SELECT id,seat_id,seat_ids,seat_label,day,COALESCE(start_minute,start_slot*30) start_minute,COALESCE(end_minute,end_slot*30) end_minute,display_name,organization,status,subject,leader,attendees,resource_type,admin_note FROM seat_bookings WHERE user_id=? AND day=? AND resource_type='seat' ORDER BY start_slot").bind(u.userId, day).all();
+  const mine = await env.DB.prepare("SELECT id,status FROM seat_bookings WHERE user_id=? AND day=? AND resource_type='seat' ORDER BY created_at").bind(u.userId, day).all();
   return response({ reservations: rows.results.flatMap((b) => (b.seat_ids ? JSON.parse(b.seat_ids) : [b.seat_id]).map((seatId) => ({ seatId, resourceType: b.resource_type, startMinute: b.startMinute, endMinute: b.endMinute, mine: b.user_id === u.userId, status: b.status }))), mine: mine.results }, 200, u.cookie);
 }
 async function POST2(r) {
@@ -276,6 +276,7 @@ async function POST2(r) {
   if (typeof b.attendees !== "number" || !Number.isInteger(b.attendees) || b.attendees < 1 || b.attendees > 1e3 || !["startup", "faculty", "staff", "other"].includes(b.groupType)) return json7({ error: "Ch\u1ECDn nh\xF3m \u0111\u1ED1i t\u01B0\u1EE3ng v\xE0 s\u1ED1 ng\u01B0\u1EDDi h\u1EE3p l\u1EC7." }, 400);
   for (const [key2, max] of [["displayName", 255], ["organization", 255], ["email", 255], ["phone", 20], ["leader", 255], ["subject", 255]]) if (typeof b[key2] !== "string" || !b[key2].trim() || b[key2].length > max) return json7({ error: "Vui l\xF2ng \u0111i\u1EC1n \u0111\u1EE7 h\u1ECD t\xEAn, \u0111\u01A1n v\u1ECB, email, \u0111i\u1EC7n tho\u1EA1i, ng\u01B0\u1EDDi ch\u1EE7 tr\xEC v\xE0 ti\xEAu \u0111\u1EC1." }, 400);
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(b.email) || !/^\+?[\d\s().-]{8,20}$/.test(b.phone) || typeof b.description !== "string" || b.description.length > 2e3) return json7({ error: "Email, s\u1ED1 \u0111i\u1EC7n tho\u1EA1i ho\u1EB7c m\xF4 t\u1EA3 kh\xF4ng h\u1EE3p l\u1EC7." }, 400);
+  if (b.occurrences !== void 0 && !Array.isArray(b.occurrences)) return json7({ error: "Danh s\xE1ch ng\xE0y l\u1EB7p kh\xF4ng h\u1EE3p l\u1EC7." }, 400);
   const occurrences = Array.isArray(b.occurrences) ? b.occurrences : [{ requestId: b.requestId, day: b.day, startMinute: b.startMinute, endMinute: b.endMinute }];
   if (!occurrences.length || occurrences.length > 52) return json7({ error: "M\u1ED9t l\u01B0\u1EE3t \u0111\u1EB7t l\u1EB7p t\u1ED1i \u0111a 52 l\u1EA7n h\xE0ng tu\u1EA7n." }, 400);
   const ids = /* @__PURE__ */ new Set(), days = /* @__PURE__ */ new Set();
@@ -298,6 +299,12 @@ async function POST2(r) {
     } else pending.push(occurrence);
   }
   if (!pending.length) return json7({ ok: true, id: occurrences[0].requestId, status: "pending", count: occurrences.length, alreadySaved: true });
+  const recent = await env.DB.prepare("SELECT COUNT(*) n FROM seat_bookings WHERE user_id=? AND created_at>=?").bind(u.userId, new Date(Date.now() - 36e5).toISOString()).first();
+  if (Number(recent?.n || 0) + pending.length > 120) {
+    const limited = json7({ error: "Phi\xEAn n\xE0y \u0111\xE3 g\u1EEDi nhi\u1EC1u l\u01B0\u1EE3t trong m\u1ED9t gi\u1EDD. Vui l\xF2ng \u0111\u1EE3i ho\u1EB7c li\xEAn h\u1EC7 qu\u1EA3n l\xFD." }, 429);
+    limited.headers.set("Retry-After", "3600");
+    return limited;
+  }
   const space = await env.DB.prepare("SELECT data,revision FROM spatial_spaces WHERE id=?").bind("main").first();
   if (!space) return json7({ error: "S\u01A1 \u0111\u1ED3 ch\u1ED7 ng\u1ED3i ch\u01B0a \u0111\u01B0\u1EE3c \xE1p d\u1EE5ng." }, 409);
   const resources = bookingResources(JSON.parse(space.data));
@@ -433,6 +440,24 @@ __export(route_exports5, {
   POST: () => POST4,
   dynamic: () => dynamic4
 });
+
+// app/layout-validation.ts
+function layoutValid(data) {
+  if (!data || data.version !== 1 || !Array.isArray(data.objects) || data.objects.length > 2e3) return false;
+  const ids = /* @__PURE__ */ new Set();
+  for (const o of data.objects) {
+    if (!o || typeof o.id !== "string" || !o.id.length || o.id.length > 100 || ids.has(o.id)) return false;
+    if (!["position", "rotation", "scale"].every((k) => Array.isArray(o[k]) && o[k].length === 3 && o[k].every((v) => typeof v === "number" && Number.isFinite(v) && Math.abs(v) < 1e4)) || o.scale.some((v) => v <= 0 || v > 1e3)) return false;
+    if (o.label !== void 0 && (typeof o.label !== "string" || o.label.length > 100)) return false;
+    if (o.source !== void 0 && (typeof o.source !== "string" || !o.source.length || o.source.length > 100)) return false;
+    if (["bookable", "deleted"].some((k) => o[k] !== void 0 && typeof o[k] !== "boolean")) return false;
+    if (o.color != null && (typeof o.color !== "string" || !/^#[a-f0-9]{6}$/i.test(o.color))) return false;
+    ids.add(o.id);
+  }
+  return true;
+}
+
+// app/api/layouts/route.ts
 var dynamic4 = "force-dynamic";
 var json3 = (data, status = 200) => Response.json(data, { status, headers: { "Cache-Control": "no-store" } });
 async function GET5(request) {
@@ -460,11 +485,7 @@ async function POST4(request) {
     return json3({ error: "D\u1EEF li\u1EC7u kh\xF4ng h\u1EE3p l\u1EC7." }, 400);
   }
   if (!b || typeof b.name !== "string" || !b.name.trim() || b.name.length > 120 || !b.data || b.data.version !== 1 || !Array.isArray(b.data.objects) || b.data.objects.length > 2e3) return json3({ error: "D\u1EEF li\u1EC7u b\u1EA3n v\u1EBD kh\xF4ng h\u1EE3p l\u1EC7." }, 400);
-  const ids = /* @__PURE__ */ new Set();
-  for (const o of b.data.objects) {
-    if (!o || typeof o.id !== "string" || !o.id.length || o.id.length > 100 || ids.has(o.id) || !["position", "rotation", "scale"].every((k) => Array.isArray(o[k]) && o[k].length === 3 && o[k].every((v) => typeof v === "number" && Number.isFinite(v) && Math.abs(v) < 1e4)) || o.scale.some((v) => v <= 0 || v > 1e3)) return json3({ error: "Th\xF4ng s\u1ED1 v\u1EADt th\u1EC3 kh\xF4ng h\u1EE3p l\u1EC7." }, 400);
-    ids.add(o.id);
-  }
+  if (!layoutValid(b.data)) return json3({ error: "Th\xF4ng s\u1ED1 ho\u1EB7c th\xF4ng tin v\u1EADt th\u1EC3 kh\xF4ng h\u1EE3p l\u1EC7." }, 400);
   const data = JSON.stringify(b.data);
   if (data.length > 2e6) return json3({ error: "B\u1EA3n l\u01B0u qu\xE1 l\u1EDBn." }, 413);
   const now = (/* @__PURE__ */ new Date()).toISOString(), id = typeof b.id === "string" ? b.id : crypto.randomUUID();
@@ -501,11 +522,7 @@ async function POST5(r) {
     return json4({ error: "D\u1EEF li\u1EC7u kh\xF4ng h\u1EE3p l\u1EC7." }, 400);
   }
   if (!b?.data || b.data.version !== 1 || !Array.isArray(b.data.objects) || b.data.objects.length > 2e3 || JSON.stringify(b.data).length > 2e6 || typeof b.name !== "string" || b.name.length > 120) return json4({ error: "S\u01A1 \u0111\u1ED3 kh\xF4ng h\u1EE3p l\u1EC7." }, 400);
-  const ids = /* @__PURE__ */ new Set();
-  for (const o of b.data.objects) {
-    if (!o || typeof o.id !== "string" || ids.has(o.id) || !["position", "rotation", "scale"].every((k) => Array.isArray(o[k]) && o[k].length === 3 && o[k].every((v) => typeof v === "number" && Number.isFinite(v) && Math.abs(v) < 1e4)) || o.scale.some((v) => v <= 0 || v > 1e3)) return json4({ error: "Th\xF4ng s\u1ED1 v\u1EADt th\u1EC3 kh\xF4ng h\u1EE3p l\u1EC7." }, 400);
-    ids.add(o.id);
-  }
+  if (!layoutValid(b.data)) return json4({ error: "Th\xF4ng s\u1ED1 ho\u1EB7c th\xF4ng tin v\u1EADt th\u1EC3 kh\xF4ng h\u1EE3p l\u1EC7." }, 400);
   const row = await env.DB.prepare("SELECT owner_id, revision FROM spatial_spaces WHERE id = ?").bind("main").first();
   const resources = bookingResources(b.data);
   const future = await env.DB.prepare("SELECT DISTINCT held.value seat_id FROM seat_bookings c,json_each(COALESCE(c.seat_ids,json_array(c.seat_id))) held WHERE c.resource_type='seat' AND c.status IN ('pending','active') AND c.day>=?").bind((/* @__PURE__ */ new Date()).toLocaleDateString("en-CA", { timeZone: "Asia/Ho_Chi_Minh" })).all();
@@ -582,19 +599,46 @@ async function POST7(r) {
 
 // app/edge-handler.ts
 var routes = { "/api/admin/auth": route_exports, "/api/bookings": route_exports2, "/api/admin/bookings": route_exports3, "/api/admin/backup": route_exports4, "/api/layouts": route_exports5, "/api/space": route_exports6, "/api/settings": route_exports7, "/api/rooms": route_exports8 };
+async function boundedBody(request, limit) {
+  if (!request.body) return "";
+  const reader = request.body.getReader(), chunks = [];
+  let size = 0;
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      size += value.byteLength;
+      if (size > limit) {
+        await reader.cancel();
+        throw Error("BODY_TOO_LARGE");
+      }
+      chunks.push(value);
+    }
+  } finally {
+    reader.releaseLock();
+  }
+  const bytes = new Uint8Array(size);
+  let offset = 0;
+  for (const chunk of chunks) {
+    bytes.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+  return new TextDecoder().decode(bytes);
+}
 function createHandler(transaction, config2) {
   return async (request) => {
     const origin = request.headers.get("origin"), allowed = config2.ALLOWED_ORIGIN;
-    const headers = { "Cache-Control": "no-store", "Vary": "Origin", "X-Content-Type-Options": "nosniff" };
+    const headers = { "Cache-Control": "no-store", "Vary": "Origin", "X-Content-Type-Options": "nosniff", "Referrer-Policy": "no-referrer", "X-Frame-Options": "DENY" };
     if (origin !== allowed) return Response.json({ error: "Ngu\u1ED3n truy c\u1EADp kh\xF4ng h\u1EE3p l\u1EC7." }, { status: 403, headers });
     Object.assign(headers, { "Access-Control-Allow-Origin": allowed, "Access-Control-Allow-Headers": "authorization, apikey, content-type, x-visitor-token", "Access-Control-Allow-Methods": "GET, POST, OPTIONS", "Access-Control-Expose-Headers": "x-visitor-token, content-disposition" });
     if (request.method === "OPTIONS") return new Response(null, { status: 204, headers });
-    const url = new URL(request.url), path = url.searchParams.get("route") || "", module = routes[path], fn = module?.[request.method];
+    const url = new URL(request.url), path = url.searchParams.get("route") || "", module = Object.hasOwn(routes, path) ? routes[path] : void 0, fn = module?.[request.method];
     if (!fn) return Response.json({ error: "Kh\xF4ng t\xECm th\u1EA5y ch\u1EE9c n\u0103ng." }, { status: module ? 405 : 404, headers });
-    if (Number(request.headers.get("content-length") || 0) > 21e5) return Response.json({ error: "D\u1EEF li\u1EC7u qu\xE1 l\u1EDBn." }, { status: 413, headers });
+    if (request.method === "POST" && request.headers.get("content-type")?.split(";")[0].trim().toLowerCase() !== "application/json") return Response.json({ error: "Ch\u1EC9 nh\u1EADn d\u1EEF li\u1EC7u JSON." }, { status: 415, headers });
+    const limit = ["/api/layouts", "/api/space"].includes(path) ? 21e5 : 65536;
+    if (Number(request.headers.get("content-length") || 0) > limit) return Response.json({ error: "D\u1EEF li\u1EC7u qu\xE1 l\u1EDBn." }, { status: 413, headers });
     try {
-      const body = request.method === "GET" ? void 0 : await request.text();
-      if (body && body.length > 21e5) return Response.json({ error: "D\u1EEF li\u1EC7u qu\xE1 l\u1EDBn." }, { status: 413, headers });
+      const body = request.method === "GET" ? void 0 : await boundedBody(request, limit);
       url.searchParams.delete("route");
       const internal = new URL(allowed);
       internal.pathname = path;
@@ -615,6 +659,7 @@ function createHandler(transaction, config2) {
       });
     } catch (e) {
       const message = String(e?.message || "");
+      if (message === "BODY_TOO_LARGE") return Response.json({ error: "D\u1EEF li\u1EC7u qu\xE1 l\u1EDBn." }, { status: 413, headers });
       if (message === "BOOKING_CONFLICT") return Response.json({ error: "C\xF3 l\u01B0\u1EE3t v\u1EEBa \u0111\u01B0\u1EE3c \u0111\u1EB7t ho\u1EB7c c\u1EA5u h\xECnh \u0111\xE3 thay \u0111\u1ED5i. Ch\u01B0a l\u01B0u chu\u1ED7i \u0111\u1EB7t l\u1EB7p; h\xE3y t\u1EA3i l\u1EA1i v\xE0 th\u1EED l\u1EA1i." }, { status: 409, headers });
       console.error("UII API failed", request.method, path, e?.code || "error");
       return Response.json({ error: "Ch\u01B0a x\u1EED l\xFD \u0111\u01B0\u1EE3c y\xEAu c\u1EA7u. Ki\u1EC3m tra c\u1EA5u h\xECnh Supabase v\xE0 th\u1EED l\u1EA1i." }, { status: 500, headers });

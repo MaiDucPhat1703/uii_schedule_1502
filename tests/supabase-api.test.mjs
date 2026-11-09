@@ -63,4 +63,31 @@ await test('Regression: repeated booking is atomic if a later week conflicts',as
  const conflict=await call('/api/bookings',{...base,requestId:occurrences[0].requestId,day:days[0],occurrences},{visitor});assert.equal(conflict.status,409);assert.equal(conflict.body.conflictDay,days[1]);
  assert.equal((await db.query("SELECT id FROM uii.seat_bookings WHERE id LIKE 'atomic-series-%'")).rows.length,0);
 });
+await test('Security: enforce JSON and streamed byte limits, minimize guest data and protect every admin write',async()=>{
+ for(const path of ['/api/settings','/api/layouts','/api/space','/api/admin/bookings'])assert.equal((await call(path,{})).status,401,path);
+ const day=new Date(Date.now()+3*86400000).toISOString().slice(0,10),guest=await ok('/api/bookings?day='+day);
+ const privacyDay=new Date(Date.now()+40*86400000).toISOString().slice(0,10);
+ await ok('/api/bookings',{requestId:'privacy-guest',resourceType:'seat',seatIds:['chair-1'],day:privacyDay,startMinute:540,endMinute:600,attendees:1,displayName:'Private name',organization:'Private organization',email:'guest@example.com',phone:'0000000000',leader:'Private leader',subject:'Private purpose',description:'Private description',groupType:'other'},{visitor:guest.visitor});
+ const publicBody=(await ok('/api/bookings?day='+privacyDay,undefined,{visitor:guest.visitor})).body;
+ assert.deepEqual(publicBody.mine,[{id:'privacy-guest',status:'pending'}]);
+ assert.ok(!JSON.stringify(publicBody).includes('guest@example.com'));
+ const tampered=guest.visitor.slice(0,-10)+'AAAAAAAAAA';const forged=(await ok('/api/bookings?day='+day,undefined,{visitor:tampered})).body;assert.deepEqual(forged.mine,[]);
+ const object={id:'safe-chair',position:[0,0,0],rotation:[0,0,0],scale:[1,1,1]};
+ for(const field of [{label:{}},{source:{}},{bookable:'true'},{color:'url(javascript:alert(1))'},{deleted:'false'}]){
+  for(const path of ['/api/layouts','/api/space'])assert.equal((await call(path,{name:'Invalid metadata',revision:3,data:{version:1,objects:[{...object,...field}]}},{admin:true})).status,400,path);
+ }
+ const url='https://testproject.supabase.co/functions/v1/uii-api?route=/api/admin/auth';
+ const simple=await handler(new Request(url,{method:'POST',headers:{Origin:origin,'Content-Type':'text/plain'},body:'{}'}));assert.equal(simple.status,415);
+ // Missing Content-Length cannot bypass the byte cap, including multibyte payloads.
+ const huge=await handler(new Request(url,{method:'POST',headers:{Origin:origin,'Content-Type':'application/json'},body:JSON.stringify({padding:'ắ'.repeat(24000)})}));assert.equal(huge.status,413);
+ assert.equal(huge.headers.get('x-content-type-options'),'nosniff');assert.equal(huge.headers.get('referrer-policy'),'no-referrer');
+ assert.equal((await call('/api/admin/bookings',undefined,{token:'x'.repeat(9000)})).status,401);
+ const injected=(await ok('/api/admin/bookings?search='+encodeURIComponent("' OR 1=1 --"),undefined,{admin:true})).body;assert.deepEqual(injected.bookings,[]);
+ const guestId='visitor:'+JSON.parse(Buffer.from(guest.visitor.split('.')[0],'base64url')).id;
+ await db.query("INSERT INTO uii.seat_bookings SELECT (jsonb_populate_record(NULL::uii.seat_bookings,to_jsonb(b)||jsonb_build_object('id','quota-'||n,'user_id',$1::text,'created_at',$2::text))).* FROM (SELECT * FROM uii.seat_bookings WHERE id='privacy-guest') b CROSS JOIN generate_series(1,120) n",[guestId,new Date().toISOString()]);
+ const request={requestId:'quota-overflow',resourceType:'seat',seatIds:['chair-1'],day:privacyDay,startMinute:540,endMinute:600,attendees:1,displayName:'QA',organization:'QA',email:'qa@example.com',phone:'0000000000',leader:'QA',subject:'QA',description:'',groupType:'other'};
+ const limited=await call('/api/bookings',request,{visitor:guest.visitor});assert.equal(limited.status,429);assert.equal(limited.headers.get('retry-after'),'3600');
+ const retry=await ok('/api/bookings',{...request,requestId:'privacy-guest'},{visitor:guest.visitor});assert.equal(retry.body.alreadySaved,true,'a saved request can be retried even after quota is reached');
+
+});
 await db.close();globalThis.fetch=realFetch;

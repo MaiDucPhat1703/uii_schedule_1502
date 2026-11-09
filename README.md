@@ -1,5 +1,7 @@
 # UII Schedule 1502 — GitHub Pages + Supabase
 
+**Lịch cả ngày và bảo mật:** xem [CAP_NHAT_LICH_NGAY_VA_BAO_MAT_20261110.md](CAP_NHAT_LICH_NGAY_VA_BAO_MAT_20261110.md).
+
 **Cập nhật dự án đang chạy:** đọc [CAP_NHAT_QA_20261110.md](CAP_NHAT_QA_20261110.md) và [BAO_CAO_KIEM_THU_20261110.md](BAO_CAO_KIEM_THU_20261110.md). Bản sửa này cần cập nhật cả API Supabase và mã GitHub; không tạo lại database.
 
 Dành cho Mai Đức Phát, tài khoản GitHub `MaiDucPhat1703`, repository `uii_schedule_1502`.
