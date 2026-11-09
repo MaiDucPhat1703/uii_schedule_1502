@@ -10,7 +10,8 @@
     "build": "node scripts/build.mjs",
     "test": "node --test tests/*.test.mjs",
     "check": "tsc --noEmit",
-    "backup:sql": "node scripts/backup-to-postgres.mjs"
+    "backup:sql": "node scripts/backup-to-postgres.mjs",
+    "build:edge": "node scripts/build-edge.mjs"
   },
   "devDependencies": {
     "@electric-sql/pglite": "0.3.14",

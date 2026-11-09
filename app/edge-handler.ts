@@ -20,5 +20,5 @@ export function createHandler(transaction:any,config:Record<string,string>){retu
  await client.unsafe('SET LOCAL search_path TO uii, pg_temp');await client.unsafe('SELECT pg_advisory_xact_lock(15021502)');
  const state={...config,DB:database(client)};return context.run(state,async()=>{const result:Response=await fn(normalized);const h=new Headers(result.headers);for(const [k,v]of Object.entries(headers))h.set(k,v);if((state as any).visitorToken)h.set('x-visitor-token',(state as any).visitorToken);h.delete('set-cookie');return new Response(result.body,{status:result.status,headers:h})});
  });
- }catch(e){console.error('UII API failed',request.method,path,(e as any)?.code||'error');return Response.json({error:'Chưa xử lý được yêu cầu. Kiểm tra cấu hình Supabase và thử lại.'},{status:500,headers})}
+ }catch(e){const message=String((e as any)?.message||'');if(message==='BOOKING_CONFLICT')return Response.json({error:'Có lượt vừa được đặt hoặc cấu hình đã thay đổi. Chưa lưu chuỗi đặt lặp; hãy tải lại và thử lại.'},{status:409,headers});console.error('UII API failed',request.method,path,(e as any)?.code||'error');return Response.json({error:'Chưa xử lý được yêu cầu. Kiểm tra cấu hình Supabase và thử lại.'},{status:500,headers})}
 }}

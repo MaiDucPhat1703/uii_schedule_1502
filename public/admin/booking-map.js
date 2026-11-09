@@ -1,13 +1,14 @@
 import * as THREE from '/studio/assets/three.module.js';
 import {buildModel} from '/studio/model.js';
 import {bookingResources,chairFacingAngle,MEETING_TABLE} from '/booking/resources.js';
+import {normalizeBookingLayout} from '/booking/layout-normalization.js';
 const NS='http://www.w3.org/2000/svg',model=buildModel();
 const catalog=new Map(model.editItems.map(i=>{const copy=i.object.clone(true);copy.position.set(0,0,0);copy.rotation.set(0,0,0);copy.scale.set(1,1,1);copy.updateMatrixWorld(true);return [i.id,{kind:i.kind,size:new THREE.Box3().setFromObject(copy).getSize(new THREE.Vector3())}]}));
 export function requestedSeatIds(booking,resources){let ids;try{ids=booking.seat_ids?JSON.parse(booking.seat_ids):[booking.seat_id]}catch{ids=[booking.seat_id]}return [...new Set(ids.flatMap(id=>resources.find(r=>r.id===id)?.members||[id]))];}
 const shape=(tag,attrs={},text)=>{const n=document.createElementNS(NS,tag);for(const [k,v] of Object.entries(attrs))n.setAttribute(k,v);if(text!==undefined)n.textContent=text;return n};
 function point(o,x,z){return new THREE.Vector3(x,0,z).multiply(new THREE.Vector3(...o.scale)).applyQuaternion(new THREE.Quaternion().setFromEuler(new THREE.Euler(...o.rotation))).add(new THREE.Vector3(...o.position))}
 export function drawBookingMap(container,space,booking,whole=false){container.replaceChildren();if(!space||booking.resource_type==='room'){const p=document.createElement('p');p.textContent=!space?'Chưa có sơ đồ đang áp dụng.':'Đăng ký phòng cũ không có vị trí ghế trên sơ đồ.';container.append(p);return {located:0,total:0,missing:[],area:'Không có sơ đồ'}}
- const resources=bookingResources(space.data),wanted=requestedSeatIds(booking,resources),ids=new Set(wanted),objects=space.data.objects.filter(o=>!o.deleted).map(o=>({...o,meta:catalog.get(o.source||o.id)})).filter(o=>o.meta),meeting=resources.find(r=>r.capacity===6),meetingIds=new Set(meeting?.members||[]),isMeeting=wanted.length>0&&wanted.every(id=>meetingIds.has(id));
+ const normalizedData=normalizeBookingLayout(space.data),resources=bookingResources(normalizedData),wanted=requestedSeatIds(booking,resources),ids=new Set(wanted),objects=normalizedData.objects.filter(o=>!o.deleted).map(o=>({...o,meta:catalog.get(o.source||o.id)})).filter(o=>o.meta),meeting=resources.find(r=>r.capacity===6),meetingIds=new Set(meeting?.members||[]),isMeeting=wanted.length>0&&wanted.every(id=>meetingIds.has(id));
  const chairs=objects.filter(o=>o.meta.kind==='chair'&&(whole||ids.has(o.id)||(isMeeting?meetingIds.has(o.id):resources.some(r=>r.capacity===1&&r.members.includes(o.id))))),located=objects.filter(o=>o.meta.kind==='chair'&&ids.has(o.id));
  const extents=whole?objects.filter(o=>['wall','glass','hex'].includes(o.meta.kind)):chairs;
  if(!extents.length){const p=document.createElement('p');p.textContent='Không tìm thấy vị trí trên sơ đồ hiện tại.';container.append(p);return {located:0,total:wanted.length,missing:wanted,area:'Không tìm thấy vị trí'}}
