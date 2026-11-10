@@ -8,20 +8,24 @@ const editToken=(row:any)=>JSON.stringify(Object.fromEntries(Object.entries(row)
 export async function GET(r:Request){
  if(!await getAdmin(r))return json({error:'Vui lòng đăng nhập admin.'},401);
  const url=new URL(r.url),day=url.searchParams.get('day'),status=url.searchParams.get('status'),query=(url.searchParams.get('search')||'').trim().toLowerCase();
- const offset=Number(url.searchParams.get('offset')||0),limit=100;
- if(!Number.isSafeInteger(offset)||offset<0||query.length>255||day&&!dayValid(day)||status&&!['pending','active','rejected','cancelled'].includes(status))return json({error:'Bộ lọc không hợp lệ.'},400);
+ let offset=Number(url.searchParams.get('offset')||0);const limit=Number(url.searchParams.get('limit')||100),from=url.searchParams.get('from'),to=url.searchParams.get('to');
+ if(!Number.isSafeInteger(limit)||limit<1||limit>100||from&&!dayValid(from)||to&&!dayValid(to)||from&&to&&from>to||!Number.isSafeInteger(offset)||offset<0||query.length>255||day&&!dayValid(day)||status&&!['pending','active','rejected','cancelled'].includes(status))return json({error:'Bộ lọc không hợp lệ.'},400);
  const conditions=["resource_type='seat'"],args:any[]=[];
  if(day){conditions.push('day=?');args.push(day)}
+ if(from){conditions.push('day>=?');args.push(from)}if(to){conditions.push('day<=?');args.push(to)}
+ const totalConditions=[...conditions],totalArgs=[...args];
  if(status){conditions.push('status=?');args.push(status)}
  if(query){conditions.push("position(? in lower(concat_ws(' ',display_name,organization,seat_label,subject,email,phone,id)))>0");args.push(query)}
+ const count=await env.DB!.prepare('SELECT COUNT(*) n FROM seat_bookings WHERE '+conditions.join(' AND ')).bind(...args).first();const totalCount=Number(count!.n);offset=Math.min(offset,Math.max(0,(Math.ceil(totalCount/limit)-1)*limit));
  const rows=await env.DB!.prepare('SELECT * FROM seat_bookings WHERE '+conditions.join(' AND ')+' ORDER BY created_at DESC,id DESC LIMIT ? OFFSET ?').bind(...args,limit+1,offset).all();
- const totals=await env.DB!.prepare("SELECT status,COUNT(*) n FROM seat_bookings WHERE resource_type='seat' GROUP BY status").all();
- return json({bookings:rows.results.slice(0,limit).map((b:any)=>({...b,edit_token:editToken(b)})),totals:totals.results,offset,limit,hasMore:rows.results.length>limit});
+ const totals=await env.DB!.prepare('SELECT status,COUNT(*) n FROM seat_bookings WHERE '+totalConditions.join(' AND ')+(query?" AND position(? in lower(concat_ws(' ',display_name,organization,seat_label,subject,email,phone,id)))>0":'')+' GROUP BY status').bind(...totalArgs,...(query?[query]:[])).all();
+ return json({bookings:rows.results.slice(0,limit).map((b:any)=>({...b,edit_token:editToken(b)})),totals:totals.results,totalCount,offset,limit,hasMore:rows.results.length>limit});
 }
-export async function POST(r:Request){if(!await getAdmin(r))return json({error:'Vui lòng đăng nhập admin.'},401);if(!sameOrigin(r))return json({error:'Yêu cầu không hợp lệ.'},403);let b:any;try{b=await r.json()}catch{return json({error:'Dữ liệu không hợp lệ.'},400)}if(typeof b?.id!=='string'||(b.note!==undefined&&(typeof b.note!=='string'||b.note.length>1000))||!['approve','edit','reject','cancel'].includes(b.action))return json({error:'Thao tác không hợp lệ.'},400);
+export async function POST(r:Request){if(!await getAdmin(r))return json({error:'Vui lòng đăng nhập admin.'},401);if(!sameOrigin(r))return json({error:'Yêu cầu không hợp lệ.'},403);let b:any;try{b=await r.json()}catch{return json({error:'Dữ liệu không hợp lệ.'},400)}if(typeof b?.id!=='string'||(b.note!==undefined&&(typeof b.note!=='string'||b.note.length>1000))||!['approve','edit','reject','cancel','reopen','delete'].includes(b.action))return json({error:'Thao tác không hợp lệ.'},400);
  const current=await env.DB!.prepare("SELECT * FROM seat_bookings WHERE id=? AND resource_type='seat'").bind(b.id).first();if(!current)return json({error:'Không tìm thấy yêu cầu.'},404);if(b.expectedToken&&b.expectedToken!==editToken(current))return json({error:'Yêu cầu đã được thay đổi. Đóng biểu mẫu và tải lại trước khi xử lý.'},409);
+ if(b.action==='delete'){if(!b.expectedToken)return json({error:'Tải lại lượt đặt trước khi xóa.'},409);await env.DB!.prepare('DELETE FROM seat_claims WHERE booking_id=?').bind(b.id).run();await env.DB!.prepare('DELETE FROM seat_bookings WHERE id=?').bind(b.id).run();return json({ok:true})}
  if(b.action==='edit'||b.action==='approve'){
- if(b.action==='approve'&&current.status!=='pending')return json({error:'Yêu cầu không còn chờ xử lý.'},409);
+ if(b.action==='approve'&&current.status==='active')return json({error:'Lượt đặt đã được duyệt.'},409);
  const ids:any[]=b.action==='edit'?b.seatIds:(current.seat_ids?JSON.parse(current.seat_ids as string):[current.seat_id]);if(!Array.isArray(ids)||!ids.length||ids.length>36||ids.some(id=>typeof id!=='string'||id.length>100)||new Set(ids).size!==ids.length)return json({error:'Chọn từ 1 đến 36 chỗ khác nhau.'},400);
  const seatIds=[...ids].sort(),space=await env.DB!.prepare("SELECT data,revision FROM spatial_spaces WHERE id='main'").first(),resources=space?bookingResources(JSON.parse(space.data as string)):[],chosen=seatIds.map(id=>resources.find((o:any)=>o.id===id));if(chosen.some(o=>!o)||chosen.length>1&&chosen.some(o=>o.capacity!==1))return json({error:'Chọn ghế đang mở; Bàn 7 phải đăng ký riêng nguyên cụm.'},400);
  const fields=b.action==='edit'?b:{day:current.day,startMinute:current.start_minute??Number(current.start_slot)*30,endMinute:current.end_minute??Number(current.end_slot)*30};
@@ -39,5 +43,6 @@ export async function POST(r:Request){if(!await getAdmin(r))return json({error:'
  const overlap=checkOverlap?` AND NOT EXISTS (SELECT 1 FROM seat_bookings other WHERE other.id<>? AND other.status='active' AND other.day=? AND EXISTS (SELECT 1 FROM json_each(COALESCE(other.seat_ids,json_array(other.seat_id))) held WHERE held.value IN (${conflicts.map(()=>'?').join(',')})) AND COALESCE(other.start_minute,other.start_slot*30)<? AND COALESCE(other.end_minute,other.end_slot*30)>?)`:'';
  const overlapArgs=checkOverlap?[b.id,fields.day,...conflicts,fields.endMinute+cfg.policy.bufferMinutes,fields.startMinute-cfg.policy.bufferMinutes]:[];
  const result=await env.DB!.prepare(`UPDATE seat_bookings SET ${assignments} WHERE id=? AND ${guard} AND EXISTS (SELECT 1 FROM spatial_spaces WHERE id='main' AND revision=?) AND EXISTS (SELECT 1 FROM booking_settings WHERE id='main' AND revision=?)${overlap}`).bind(...values,b.id,...snapshotValues,Number(space!.revision),cfg.revision,...overlapArgs).run();if(!result.meta.changes)return json({error:'Có lịch đã duyệt trùng giờ hoặc dữ liệu vừa thay đổi. Chưa lưu thay đổi; hãy tải lại.'},409);
- }else{const allowed=b.action==='reject'?"'pending'":"'pending','active'",status=b.action==='reject'?'rejected':'cancelled';const results=await env.DB!.batch([env.DB!.prepare('DELETE FROM seat_claims WHERE booking_id=? AND EXISTS (SELECT 1 FROM seat_bookings WHERE id=? AND status IN ('+allowed+'))').bind(b.id,b.id),env.DB!.prepare('UPDATE seat_bookings SET status=?,admin_note=? WHERE id=? AND status IN ('+allowed+')').bind(status,b.note||'',b.id)]);if(!results[1].meta.changes)return json({error:'Lượt đặt đã được xử lý. Hãy cập nhật danh sách.'},409);}
+ }else{const status=({reject:'rejected',cancel:'cancelled',reopen:'pending'} as Record<string,string>)[b.action];if(current.status===status)return json({error:'Lượt đặt đã ở trạng thái này. Hãy cập nhật danh sách.'},409);await env.DB!.prepare('DELETE FROM seat_claims WHERE booking_id=?').bind(b.id).run();await env.DB!.prepare('UPDATE seat_bookings SET status=?,admin_note=? WHERE id=?').bind(status,b.note||'',b.id).run();}
+
  return json({ok:true});}

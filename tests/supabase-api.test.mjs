@@ -90,4 +90,26 @@ await test('Security: enforce JSON and streamed byte limits, minimize guest data
  const retry=await ok('/api/bookings',{...request,requestId:'privacy-guest'},{visitor:guest.visitor});assert.equal(retry.body.alreadySaved,true,'a saved request can be retried even after quota is reached');
 
 });
+await test('Admin operations: six-row pages, inclusive date range, status transitions, stale tokens and deletion',async()=>{
+ const all=(await ok('/api/admin/bookings?limit=6',undefined,{admin:true})).body;
+ assert.equal(all.bookings.length,6);assert.ok(all.totalCount>6);assert.equal(all.hasMore,true);
+ const next=(await ok('/api/admin/bookings?limit=6&offset=6',undefined,{admin:true})).body;
+ assert.ok(next.bookings.every(b=>!all.bookings.some(a=>a.id===b.id)));
+ const row=all.bookings[0];
+ const ranged=(await ok('/api/admin/bookings?limit=6&from='+row.day+'&to='+row.day,undefined,{admin:true})).body;
+ assert.ok(ranged.bookings.every(b=>b.day===row.day));assert.ok(ranged.totalCount>0);
+ for(const q of ['limit=0','limit=101','from=2026-02-30','from=2026-12-31&to=2026-01-01'])assert.equal((await call('/api/admin/bookings?'+q,undefined,{admin:true})).status,400);
+ await db.query("INSERT INTO uii.seat_bookings SELECT (jsonb_populate_record(NULL::uii.seat_bookings,to_jsonb(b)||jsonb_build_object('id','ops-delete','status','cancelled'))).* FROM uii.seat_bookings b LIMIT 1");
+ let item=(await ok('/api/admin/bookings?search=ops-delete',undefined,{admin:true})).body.bookings[0];
+ assert.equal((await call('/api/admin/bookings',{id:item.id,action:'delete',expectedToken:item.edit_token},{token:'non-admin'})).status,401);
+ await ok('/api/admin/bookings',{id:item.id,action:'reopen',expectedToken:item.edit_token},{admin:true});
+ assert.equal((await call('/api/admin/bookings',{id:item.id,action:'delete',expectedToken:item.edit_token},{admin:true})).status,409);
+ item=(await ok('/api/admin/bookings?search=ops-delete',undefined,{admin:true})).body.bookings[0];assert.equal(item.status,'pending');
+ await ok('/api/admin/bookings',{id:item.id,action:'reject',expectedToken:item.edit_token},{admin:true});
+ item=(await ok('/api/admin/bookings?search=ops-delete',undefined,{admin:true})).body.bookings[0];assert.equal(item.status,'rejected');
+ assert.equal((await call('/api/admin/bookings',{id:item.id,action:'delete'},{admin:true})).status,409);
+ await ok('/api/admin/bookings',{id:item.id,action:'delete',expectedToken:item.edit_token},{admin:true});
+ assert.equal((await ok('/api/admin/bookings?search=ops-delete',undefined,{admin:true})).body.totalCount,0);
+ const tail=(await ok('/api/admin/bookings?limit=6&offset=999999',undefined,{admin:true})).body;assert.ok(tail.bookings.length<=6);assert.ok(tail.bookings.length>0);assert.equal(tail.hasMore,false);
+});
 await db.close();globalThis.fetch=realFetch;
