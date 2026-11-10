@@ -8,3 +8,5 @@ header nav{display:flex;align-items:center;gap:15px;flex-wrap:wrap}nav a{color:#
 .unlimited-booking{margin-top:14px;display:flex!important;align-items:center;gap:9px;font-weight:650;color:#31543e}
 .unlimited-booking input{width:17px;height:17px;accent-color:#386e52}
 #policyForm input:disabled{opacity:.55;background:#f1f3ef;cursor:not-allowed}
+
+#reviewDetails strong,#detailsContent>div,#decisionSummary,.request-card small{white-space:pre-line;line-height:1.65;overflow-wrap:anywhere}#reviewDetails>div:first-child{grid-column:1/-1;padding:14px 16px;border:1px solid #dde6d6;background:#f7faf3;border-radius:9px}#reviewDetails>div:first-child strong{display:block;margin-top:6px;font-size:14px;font-weight:500}.request-card small{font-size:12px}

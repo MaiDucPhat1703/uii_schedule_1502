@@ -1,0 +1,10 @@
+import assert from 'node:assert/strict';
+import {placeGroups,placeSummary} from '../public/booking/place-summary.js';
+const input='Bàn 2 · Ghế 04; Bàn 2 · Ghế 03; '+[6,3,2,4,1,5].map(n=>'Bàn 5 · Ghế '+String(n).padStart(2,'0')).join('; ');
+assert.equal(placeSummary(input),'Bàn 2 · Ghế 03, 04\nBàn 5 · Cả 6 ghế');
+assert.equal(placeSummary('Bàn 1 · Ghế 03; Bàn 1 · Ghế 02; Bàn 1 · Ghế 01'),'Bàn 1 · Ghế 01, 02, 03');
+assert.equal(placeSummary([{code:'Bàn 7',capacity:6}]),'Bàn 7 · Nguyên bàn · 6 chỗ');
+assert.equal(placeSummary('Bàn 1 · Ghế 01; Bàn 1 · Ghế 01'),'Bàn 1 · Ghế 01');
+assert.equal(placeSummary('Phòng 15.02'),'Phòng 15.02');
+assert.deepEqual(placeGroups(''),[]);
+console.log('PASS grouped, sorted, deduplicated summaries for old bookings, full tables, meeting groups and room labels');
