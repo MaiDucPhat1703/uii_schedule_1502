@@ -3,7 +3,7 @@ if(new URLSearchParams(location.search).get('embedded')==='1'){
  const root=document.documentElement;root.classList.add('embedded-editor');
  window.addEventListener('DOMContentLoaded',()=>{
   const $=id=>document.getElementById(id);
-  const show=(kind,open)=>{root.classList.toggle('show-'+kind,open);$(kind==='tools'?'embedTools':'embedProperties').setAttribute('aria-expanded',String(open))};
+  const show=(kind,open)=>{if(open&&window.matchMedia('(max-width: 600px)').matches){const other=kind==='tools'?'properties':'tools';root.classList.remove('show-'+other);$(other==='tools'?'embedTools':'embedProperties').setAttribute('aria-expanded','false')}root.classList.toggle('show-'+kind,open);$(kind==='tools'?'embedTools':'embedProperties').setAttribute('aria-expanded',String(open))};
   $('embedTools').onclick=()=>show('tools',!root.classList.contains('show-tools'));
   $('embedProperties').onclick=()=>show('properties',!root.classList.contains('show-properties'));
   window.addEventListener('editor-selection',e=>{if(e.detail)show('properties',true)});
