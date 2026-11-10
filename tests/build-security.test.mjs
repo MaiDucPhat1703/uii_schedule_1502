@@ -7,7 +7,7 @@ await test('Deployment build blocks secret keys and installs a restrictive brows
   const html=fs.readFileSync('dist/'+file,'utf8');
   assert.ok(html.includes('http-equiv="Content-Security-Policy"'));
   assert.ok(html.includes("script-src 'self'"));assert.ok(!html.includes("script-src 'self' 'unsafe-inline'"));
-  assert.ok(html.includes("object-src 'none'"));assert.ok(html.includes("base-uri 'self'"));assert.ok(html.includes('name="referrer" content="no-referrer"'));
+  assert.ok(html.includes("object-src 'none'"));assert.ok(html.includes("frame-src 'self'"));assert.ok(html.includes("base-uri 'self'"));assert.ok(html.includes('name="referrer" content="no-referrer"'));
   assert.ok(html.includes("connect-src 'self' https://uitestproject.supabase.co"));
   assert.ok(!html.includes('sb_secret_never_bundle'));
  }

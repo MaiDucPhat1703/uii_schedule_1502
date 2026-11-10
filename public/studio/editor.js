@@ -2,7 +2,7 @@ import {formatDateTime} from '/booking/date-format.js';
 import * as THREE from './assets/three.module.js';
 import {buildModel} from './model.js';
 import {pickItem,clipboardRecord,parseObjectClipboard,toggleSelection,selectionCenter,translateSelection,rotateSelection} from './interaction.js';
-const authCheck=await fetch('/api/admin/auth').then(r=>r.json());if(!authCheck.authenticated){location.replace('/admin/login/?returnTo='+encodeURIComponent('/studio/index.html'));throw Error('Admin login required')}
+const authCheck=await fetch('/api/admin/auth').then(r=>r.json());if(!authCheck.authenticated){location.replace('/admin/login/?returnTo='+encodeURIComponent('/studio/index.html'+(new URLSearchParams(location.search).get('embedded')==='1'?'?embedded=1':'')));throw Error('Admin login required')}
 const $=id=>document.getElementById(id),host=$('scene');
 let renderer;
 try{renderer=new THREE.WebGLRenderer({antialias:true,alpha:true})}catch(e){$('loading').textContent='Trình duyệt chưa bật WebGL. Hãy bật tăng tốc đồ họa để chỉnh mô hình.';throw e}
@@ -34,7 +34,7 @@ function apply(data){validate(data);for(let n=items.length-1;n>=0;n--){const i=i
  $('layoutName').value=data.name||'Phương án của Phát';selected=null;selectedItems.clear();helper.visible=false;syncVisibility();refreshList();refreshProperties();}
 function syncVisibility(){for(const i of items){i.object.visible=!i.deleted&&(i.kind!=='wall'&&i.kind!=='glass'||wallsVisible);i.object.traverse(o=>{if(o.userData.isRoof)o.visible=roofsVisible})}}
 function updateSelectionHelper(){helper.visible=selectedItems.size>0;helper.box.makeEmpty();model.root.updateMatrixWorld(true);for(const i of selectedItems)helper.box.union(new THREE.Box3().setFromObject(i.object));}
-function select(item,toggle=false,preserve=false){toggleSelection(selectedItems,item,toggle,preserve);selected=[...selectedItems].at(-1)||null;updateSelectionHelper();refreshList();refreshProperties()}
+function select(item,toggle=false,preserve=false){toggleSelection(selectedItems,item,toggle,preserve);selected=[...selectedItems].at(-1)||null;updateSelectionHelper();refreshList();refreshProperties();window.dispatchEvent(new CustomEvent('editor-selection',{detail:!!selected}))}
 function center(){return new THREE.Vector3(...selectionCenter([...selectedItems]))}
 function translateGroup(axis,value){translateSelection([...selectedItems],axis,value)}
 function rotateGroup(angle){rotateSelection([...selectedItems],angle)}

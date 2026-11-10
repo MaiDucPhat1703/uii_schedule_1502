@@ -1,0 +1,24 @@
+.embed-only{display:none}
+.embedded-editor body{height:100dvh;overflow:hidden;font-size:12px}
+.embedded-editor header{min-height:64px;height:64px;padding:10px 14px;display:flex;flex-wrap:nowrap}
+.embedded-editor header>.brand,.embedded-editor header>.mode-link{display:none}
+.embedded-editor .savegroup{display:flex;width:100%;gap:8px;flex-wrap:nowrap;justify-content:flex-start}
+.embedded-editor .savegroup input{width:150px;min-width:90px;flex:0 1 180px;font-size:11px}
+.embedded-editor .savegroup #saveState{font-size:10px;max-width:none;flex:1;min-width:80px}
+.embedded-editor .savegroup #save{font-size:11px;width:auto;flex:none;padding:10px 12px}
+.editor-more{position:relative;flex:none;font-size:11px}.editor-more>summary{padding:10px 12px;cursor:pointer;border:1px solid var(--border);border-radius:6px;white-space:nowrap;list-style:none}.editor-more>summary:after{content:' ⌄'}.editor-more>div{position:absolute;right:0;top:calc(100% + 8px);width:230px;padding:8px;background:#fff;border:1px solid var(--border);border-radius:8px;z-index:15;box-shadow:0 8px 24px #29443620}.editor-more button{display:block;width:100%;text-align:left;margin:3px 0;font-size:11px!important}
+.embedded-editor main{display:block;position:relative;height:calc(100dvh - 64px);min-height:0}
+.embedded-editor .viewer{height:100%;min-height:0;width:100%;grid-column:auto;grid-row:auto}
+.embedded-editor .viewbar{top:12px;left:14px;right:14px;flex-direction:row;align-items:center;gap:8px}
+.embedded-editor .viewbar>div:first-child{display:none}
+.embedded-editor .viewactions{width:100%;flex-wrap:wrap;gap:5px}
+.embedded-editor .embed-only{display:inline-block}.embedded-editor #reference{margin-left:auto}
+.embedded-editor aside.left,.embedded-editor aside.right{display:none;position:absolute;top:62px;bottom:95px;max-height:none;width:235px;background:#fffffff5;z-index:5;border:1px solid var(--border);border-radius:8px;padding:15px;box-shadow:0 8px 26px #234322;overflow:auto}
+.embedded-editor aside.left{left:14px}.embedded-editor aside.right{right:14px}
+.embedded-editor.show-tools aside.left,.embedded-editor.show-properties aside.right{display:block}
+.embedded-editor .left>.eyebrow,.embedded-editor .left>h1,.embedded-editor .left>.help{display:none}
+.embedded-editor .left .tabs{margin-top:0}.embedded-editor #empty{padding-top:10px}.embedded-editor #empty>span,.embedded-editor #empty p{display:none}.embedded-editor #empty h2{font-size:13px}
+.embedded-editor .right #properties{padding-top:14px}.embedded-editor .right .help{display:none}.embedded-editor .right .settings{margin-top:16px;padding-top:14px}
+.embedded-editor .floating{bottom:42px}.embedded-editor .viewerhelp{bottom:14px;font-size:9px}.embedded-editor .selection-name{bottom:94px;font-size:10px}
+.embedded-editor #toast{top:72px;font-size:11px}
+@media(max-width:600px){.embedded-editor header{height:100px;min-height:100px;padding:10px}.embedded-editor .savegroup{flex-wrap:wrap;gap:7px}.embedded-editor .savegroup input{flex:1}.embedded-editor .savegroup #saveState{min-width:120px;flex:1}.embedded-editor .savegroup #save{order:3;flex:1}.embedded-editor .editor-more{order:4}.embedded-editor main{height:calc(100dvh - 100px)}.embedded-editor aside.left,.embedded-editor aside.right{top:90px;width:min(235px,calc(100% - 28px));bottom:95px}.embedded-editor.show-tools.show-properties aside.left{display:none}.embedded-editor #reference{margin-left:0}.embedded-editor .viewactions button{font-size:10px;padding:8px}.embedded-editor .floating button{padding:7px}.embedded-editor .viewerhelp{display:none}}

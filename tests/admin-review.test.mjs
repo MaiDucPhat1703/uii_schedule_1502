@@ -20,5 +20,6 @@ try{const mapSource=fs.readFileSync('public/admin/booking-map.js','utf8').replac
  assert.equal(get('pageLabel').textContent,'Trang 2 / 2');assert.equal(get('previousPage').disabled,false);assert.equal(get('nextPage').disabled,true);
  get('policyLink').onclick();assert.equal(get('policyFold').open,true);assert.equal(get('bookingView').hidden,true);get('bookingsLink').onclick();assert.equal(get('policyFold').hidden,true);assert.equal(get('bookingView').hidden,false);
  globalThis.fetch=originalFetch;
+ get('editorLink').onclick();assert.equal(get('editorView').hidden,false);assert.equal(get('bookingView').hidden,true);assert.equal(get('editorFrame').src,'/studio/index.html?embedded=1');const frame=get('editorFrame');get('policyLink').onclick();assert.equal(get('editorView').hidden,true);get('editorLink').onclick();assert.equal(get('editorFrame'),frame,'switching views keeps the same editor instance and unsaved state');get('bookingsLink').onclick();await get('refresh').onclick();assert.equal(get('bookingView').hidden,false);
 
 }finally{globalThis.setInterval=oldInterval;globalThis.setTimeout=oldTimeout}
