@@ -1,8 +1,18 @@
-// Keep the saved layout intact in both guest and management maps.
+import {bookingResources} from './resources.js';
+// Display the six-place meeting resource as a regular cluster; never change stored IDs/layout.
 export function normalizeBookingLayout(data) {
-  return {...data, objects:(data?.objects||[]).map(o=>({...o,
-    position:[...o.position],rotation:[...o.rotation],scale:[...o.scale]
-  }))};
+  const objects=(data?.objects||[]).map(o=>({...o,position:[...o.position],rotation:[...o.rotation],scale:[...o.scale]}));
+  const group=bookingResources(data).find(r=>r.capacity===6);
+  if(group){
+    const members=objects.filter(o=>group.members.includes(o.id)).sort((a,b)=>Number((a.source||a.id).match(/chair-(\d+)$/)?.[1]||0)-Number((b.source||b.id).match(/chair-(\d+)$/)?.[1]||0)||a.id.localeCompare(b.id));
+    const yaw=group.rotation[1],cos=Math.cos(yaw),sin=Math.sin(yaw);
+    members.forEach((chair,i)=>{
+      const angle=i*Math.PI/3,x=Math.sin(angle)*1.15*group.scale[0],z=Math.cos(angle)*1.15*group.scale[2];
+      chair.position[0]=group.position[0]+x*cos+z*sin;
+      chair.position[2]=group.position[2]-x*sin+z*cos;
+    });
+  }
+  return {...data,objects};
 }
 
 // Date-only arithmetic avoids local timezone/DST shifts for weekly recurrence.
