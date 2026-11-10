@@ -59,7 +59,7 @@ function drawDetailMap(){
  for(const o of objects.filter(o=>o.meta.kind==='hex'&&(group?o.id===MEETING_TABLE:o.id!==MEETING_TABLE))){
  const size=o.meta.size,points=hexOutline().map(([x,z])=>transform(o,x,z));
  const polygon=svg('polygon',{points:points.map(p=>p.x+','+p.z).join(' '),class:'furniture'+(o.id===activeTable?' highlighted-table':''),...(group?{role:'button',tabindex:'0','aria-label':'Chọn Bàn 7 · nguyên cụm 6 chỗ'}:{})});if(group){const meetingSeat=resources.find(r=>r.capacity===6);if(meetingSeat){polygon.style.cursor='pointer';polygon.onclick=()=>choose(meetingSeat);polygon.onkeydown=e=>{if(['Enter',' '].includes(e.key)){e.preventDefault();choose(meetingSeat)}}}}map.append(polygon);
- polygon.append(svg('title',{},group?'Bàn 7':o.label?.replace('Bàn lục giác','Bàn')||'Bàn '+Number((o.source||o.id).slice(4))));
+ polygon.append(svg('title',{},group?'Bàn 7':o.label?.replace('Bàn lục giác','Bàn')||'Bàn '+Number((o.source||o.id).slice(4))));const center=transform(o,0,0);map.append(svg('text',{x:center.x,y:center.z,class:'furniture-label'},o.id===MEETING_TABLE?'Bàn 7':'Bàn '+Number((o.source||o.id).slice(4))));
 
 
  }
