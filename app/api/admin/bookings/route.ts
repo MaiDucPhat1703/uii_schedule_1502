@@ -11,6 +11,7 @@ export async function GET(r:Request){
  let offset=Number(url.searchParams.get('offset')||0);const limit=Number(url.searchParams.get('limit')||100),from=url.searchParams.get('from'),to=url.searchParams.get('to');
  if(!Number.isSafeInteger(limit)||limit<1||limit>100||from&&!dayValid(from)||to&&!dayValid(to)||from&&to&&from>to||!Number.isSafeInteger(offset)||offset<0||query.length>255||day&&!dayValid(day)||status&&!['pending','active','rejected','cancelled'].includes(status))return json({error:'Bộ lọc không hợp lệ.'},400);
  const conditions=["resource_type='seat'"],args:any[]=[];
+ if(url.searchParams.get('excludeCancelled')==='1')conditions.push("status<>'cancelled'");
  if(day){conditions.push('day=?');args.push(day)}
  if(from){conditions.push('day>=?');args.push(from)}if(to){conditions.push('day<=?');args.push(to)}
  const totalConditions=[...conditions],totalArgs=[...args];

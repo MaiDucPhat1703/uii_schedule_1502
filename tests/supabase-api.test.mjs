@@ -100,6 +100,7 @@ await test('Admin operations: six-row pages, inclusive date range, status transi
  assert.ok(ranged.bookings.every(b=>b.day===row.day));assert.ok(ranged.totalCount>0);
  for(const q of ['limit=0','limit=101','from=2026-02-30','from=2026-12-31&to=2026-01-01'])assert.equal((await call('/api/admin/bookings?'+q,undefined,{admin:true})).status,400);
  await db.query("INSERT INTO uii.seat_bookings SELECT (jsonb_populate_record(NULL::uii.seat_bookings,to_jsonb(b)||jsonb_build_object('id','ops-delete','status','cancelled'))).* FROM uii.seat_bookings b LIMIT 1");
+ const hidden=(await ok('/api/admin/bookings?search=ops-delete&excludeCancelled=1',undefined,{admin:true})).body;assert.equal(hidden.totalCount,0);assert.ok(hidden.totals.every(t=>t.status!=='cancelled'));
  let item=(await ok('/api/admin/bookings?search=ops-delete',undefined,{admin:true})).body.bookings[0];
  assert.equal((await call('/api/admin/bookings',{id:item.id,action:'delete',expectedToken:item.edit_token},{token:'non-admin'})).status,401);
  await ok('/api/admin/bookings',{id:item.id,action:'reopen',expectedToken:item.edit_token},{admin:true});
