@@ -45,3 +45,5 @@ body{font-size:14px}label{font-size:12px}.intro p,.section-top p,.seat-detail p{
 
 /* Keep the saved floor plan visible beneath the area selection outline. */
 .overview-zone rect{fill-opacity:.06}.overview-zone:hover rect,.overview-zone:focus rect{fill-opacity:.18}.overview-chair{fill:#7f9581;stroke:#526b55;stroke-width:.025;pointer-events:none}
+
+.overview-chair rect{fill:#c8dfc4;stroke:#83a276;stroke-width:.025}.overview-chair path{fill:none;stroke:#719266;stroke-width:.035;stroke-linecap:round}.overview-chair{pointer-events:none}

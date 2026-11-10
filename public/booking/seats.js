@@ -1,7 +1,8 @@
+import {CHAIR_BODY,CHAIR_BACK_PATH,hexOutline} from './furniture-geometry.js';
 import {dailyIntervals,dailySummary} from './day-overview.js';
 import {mountClockPicker} from './clock-picker.js';
 import {minuteAt,draggedRange} from './time-selection.js';
-import {bookingResources,resourceReservations,MEETING_TABLE} from './resources.js';
+import {bookingResources,resourceReservations,MEETING_TABLE,chairFacingAngle} from './resources.js';
 import {weeklyOccurrences} from './layout-normalization.js';
 import * as THREE from '/studio/assets/three.module.js';
 import {buildModel} from '/studio/model.js';
@@ -25,10 +26,12 @@ function transform(o,x,z){const q=new THREE.Quaternion().setFromEuler(new THREE.
 function openArea(area){if($('bookingModal').open)return;activeArea=area;selected=null;picked.clear();requestId=null;view='map';$('search').value='';$('onlyFree').checked=false;activeTable=null;if(area==='meeting'){selected=seats.find(s=>s.capacity===6)||null;if(selected)picked.add(selected.id)}drawDetailMap();render();applyZoom();$('timePicker').scrollIntoView({behavior:'smooth',block:'start'})}
 function syncArea(){const detail=activeArea!==null;$('overviewPanel').hidden=detail;$('bookingWorkspace').hidden=!detail;$('timePicker').hidden=!detail;$('areaTitle').textContent=activeArea==='meeting'?'Khu 2 · Bàn 7 bên trong':'Khu 1 · Bàn 1–6';$('tablePicker').replaceChildren();$('selectionBasket').hidden=activeArea==='meeting';$('spaceName').textContent=activeArea==='meeting'?'Bàn 7 · Nguyên cụm 6 chỗ':'Chọn ghế';$('mapToolbar').hidden=false;}
 
+function chairAngle(o){const seat=seats.find(r=>r.members.includes(o.id)),table=objects.find(t=>t.id===seat?.tableId);return table?chairFacingAngle(o.position,table.position):180-(o.rotation[1]+(o.meta.angle||0))*180/Math.PI;}
+
 function drawOverview(){const node=svg('svg',{viewBox:'-8.5 -9.3 27 18.8',class:'overview-map',role:'group','aria-label':'Tổng quan gồm khu bàn 1 đến 6 và bàn 7 bên trong'});$('overviewMap').replaceChildren(node);
  const relevant=objects;
  if(relevant.length){const corners=relevant.flatMap(o=>[[-1,-1],[1,-1],[1,1],[-1,1]].map(([x,z])=>transform(o,x*o.meta.size.x/2,z*o.meta.size.z/2)));const xs=corners.map(p=>p.x),zs=corners.map(p=>p.z);node.setAttribute('viewBox',[Math.min(...xs)-.8,Math.min(...zs)-.8,Math.max(...xs)-Math.min(...xs)+1.6,Math.max(...zs)-Math.min(...zs)+1.6].join(' '))}
- for(const o of relevant){const size=o.meta.size,points=o.meta.kind==='hex'?Array.from({length:6},(_,i)=>transform(o,Math.cos(i*Math.PI/3)*size.x/2,Math.sin(i*Math.PI/3)*size.z/2)):[[-1,-1],[1,-1],[1,1],[-1,1]].map(([x,z])=>transform(o,x*size.x/2,z*size.z/2));node.append(svg('polygon',{points:points.map(p=>p.x+','+p.z).join(' '),class:['wall','glass','divider'].includes(o.meta.kind)?'overview-wall':o.meta.kind==='chair'?'overview-chair':'overview-furniture','data-object-id':o.id,...(o.color?{style:'fill:'+o.color}:{})}))}
+ for(const o of relevant){if(o.meta.kind==='chair'){const angle=chairAngle(o),g=svg('g',{class:'overview-chair','data-object-id':o.id,transform:`translate(${o.position[0]} ${o.position[2]}) rotate(${angle}) scale(${o.scale[0]} ${o.scale[2]})`});g.append(svg('rect',CHAIR_BODY),svg('path',{d:CHAIR_BACK_PATH}));node.append(g);continue;}const size=o.meta.size,points=o.meta.kind==='hex'?hexOutline().map(([x,z])=>transform(o,x,z)):[[-1,-1],[1,-1],[1,1],[-1,1]].map(([x,z])=>transform(o,x*size.x/2,z*size.z/2));node.append(svg('polygon',{points:points.map(p=>p.x+','+p.z).join(' '),class:['wall','glass','divider'].includes(o.meta.kind)?'overview-wall':o.meta.kind==='chair'?'overview-chair':'overview-furniture','data-object-id':o.id,...(o.color?{style:'fill:'+o.color}:{})}))}
  for(const group of [false,true]){const resources=seats.filter(s=>(s.capacity===6)===group);if(!resources.length)continue;const ids=new Set(resources.flatMap(r=>r.members)),chairs=objects.filter(o=>ids.has(o.id)),xs=chairs.map(o=>o.position[0]),zs=chairs.map(o=>o.position[2]);const x=Math.min(...xs)-.6,z=Math.min(...zs)-.6,w=Math.max(...xs)-x+.6,h=Math.max(...zs)-z+.6;const g=svg('g',{class:'overview-zone',role:'button',tabindex:'0','aria-label':group?'Chọn khu 2: Bàn 7, đặt nguyên 6 chỗ':'Chọn khu 1: Bàn 1 đến 6, đặt từng ghế'});g.append(svg('rect',{x,y:z,width:w,height:h,rx:.25}),svg('text',{x:x+w/2,y:z-.35},group?'Khu 2 · Bàn 7':'Khu 1 · Bàn 1–6'),svg('text',{x:x+w/2,y:z+.12,class:'overview-subtitle'},group?'Đặt nguyên 6 chỗ →':'Chọn từng ghế →'));g.onclick=()=>openArea(group?'meeting':'working');g.onkeydown=e=>{if(['Enter',' '].includes(e.key)){e.preventDefault();openArea(group?'meeting':'working')}};node.append(g)}
 }
 
@@ -51,15 +54,15 @@ function drawDetailMap(){
  const xs=chairs.map(o=>o.position[0]),zs=chairs.map(o=>o.position[2]);const minX=Math.min(...xs)-.6,maxX=Math.max(...xs)+.6,minZ=Math.min(...zs)-.65,maxZ=Math.max(...zs)+.65;
  map.setAttribute('viewBox',[minX,minZ,maxX-minX,maxZ-minZ].join(' '));map.style.aspectRatio=(maxX-minX)/(maxZ-minZ);
  for(const o of objects.filter(o=>o.meta.kind==='hex'&&(group?o.id===MEETING_TABLE:o.id!==MEETING_TABLE))){
- const size=o.meta.size,points=Array.from({length:6},(_,i)=>transform(o,Math.cos(i*Math.PI/3)*size.x/2,Math.sin(i*Math.PI/3)*size.z/2));
+ const size=o.meta.size,points=hexOutline().map(([x,z])=>transform(o,x,z));
  const polygon=svg('polygon',{points:points.map(p=>p.x+','+p.z).join(' '),class:'furniture'+(o.id===activeTable?' highlighted-table':''),...(group?{role:'button',tabindex:'0','aria-label':'Chọn Bàn 7 · nguyên cụm 6 chỗ'}:{})});if(group){const meetingSeat=resources.find(r=>r.capacity===6);if(meetingSeat){polygon.style.cursor='pointer';polygon.onclick=()=>choose(meetingSeat);polygon.onkeydown=e=>{if(['Enter',' '].includes(e.key)){e.preventDefault();choose(meetingSeat)}}}}map.append(polygon);
  const p=transform(o,0,0);map.append(svg('text',{x:p.x,y:p.z-.10,class:'furniture-label'},group?'Bàn 7':o.label?.replace('Bàn lục giác','Bàn')||'Bàn '+Number((o.source||o.id).slice(4))));
  if(group)map.append(svg('text',{x:p.x,y:p.z+.23,class:'furniture-label group-caption'},'ĐẶT 6 CHỖ'));
 
  }
- for(const o of chairs){const seat=resources.find(r=>r.members.includes(o.id));if(!seat)continue;const p=transform(o,0,0),table=objects.find(t=>t.id===seat.tableId),angle=-(o.rotation[1]+(o.meta.angle||0))*180/Math.PI;
+ for(const o of chairs){const seat=resources.find(r=>r.members.includes(o.id));if(!seat)continue;const p=transform(o,0,0),table=objects.find(t=>t.id===seat.tableId),angle=chairAngle(o);
  const node=svg('g',{transform:`translate(${p.x} ${p.z}) rotate(${angle}) scale(${o.scale[0]} ${o.scale[2]})`,class:'seat unknown',...(group?{}:{role:'button',tabindex:'0'}),'data-seat-id':seat.id});
- node.append(svg('rect',{x:-.225,y:-.20,width:.45,height:.40,rx:.065,class:'seat-body'}),svg('path',{d:'M -.20 -.25 Q 0 -.31 .20 -.25',class:'seat-back'}),svg('text',{x:0,y:.01,transform:`rotate(${-angle})`},group?'':seat.shortCode));
+ node.append(svg('rect',{...CHAIR_BODY,class:'seat-body'}),svg('path',{d:CHAIR_BACK_PATH,class:'seat-back'}),svg('text',{x:0,y:.01,transform:`rotate(${-angle})`},group?'':seat.shortCode));
  const title=svg('title',{},seat.code+' · '+seat.label);node.append(title);seat.mapNodes??=[];seat.mapNodes.push({node,title});node.setAttribute('role','button');node.setAttribute('tabindex','0');node.onclick=()=>choose(seat);node.onkeydown=e=>{if(['Enter',' '].includes(e.key)){e.preventDefault();choose(seat)}};map.append(node);
  }
  }

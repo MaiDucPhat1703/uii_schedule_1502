@@ -9,3 +9,9 @@ console.log('PASS readable unique codes, clockwise seat numbering, six-place clu
 
 for(let i=0;i<6;i++){const a=i*Math.PI/3,chair=[2+Math.sin(a),0,3+Math.cos(a)],table=[2,0,3],angle=chairFacingAngle(chair,table)*Math.PI/180;const front=[-Math.sin(angle),Math.cos(angle)],toward=[table[0]-chair[0],table[2]-chair[2]];assert.ok(front[0]*toward[0]+front[1]*toward[1]>.999,'chair front faces table; back outside for all six angles');}
 console.log('PASS all six chair orientations face the table center');
+
+const {hexOutline,CHAIR_BODY}=await import('../public/booking/furniture-geometry.js');
+const outline=hexOutline();
+for(let i=0;i<6;i++)assert.ok(Math.abs(Math.hypot(outline[i][0]-outline[(i+1)%6][0],outline[i][1]-outline[(i+1)%6][1])-.96)<1e-9,'regular hexagon is not flattened by applying bounding dimensions twice');
+assert.equal(CHAIR_BODY.width,.45);assert.equal(CHAIR_BODY.height,.43);
+console.log('PASS shared tabletop and chair dimensions match the 3D model');
