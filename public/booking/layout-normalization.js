@@ -1,5 +1,5 @@
 import {bookingResources} from './resources.js';
-// Display the six-place meeting resource as a regular cluster; never change stored IDs/layout.
+// Align requested display clusters without changing stored layout or booking identities.
 export function normalizeBookingLayout(data) {
   const objects=(data?.objects||[]).map(o=>({...o,position:[...o.position],rotation:[...o.rotation],scale:[...o.scale]}));
   const group=bookingResources(data).find(r=>r.capacity===6);
@@ -10,6 +10,17 @@ export function normalizeBookingLayout(data) {
       const angle=i*Math.PI/3,x=Math.sin(angle)*1.15*group.scale[0],z=Math.cos(angle)*1.15*group.scale[2];
       chair.position[0]=group.position[0]+x*cos+z*sin;
       chair.position[2]=group.position[2]-x*sin+z*cos;
+    });
+  }
+  const resources=bookingResources(data),table=objects.find(o=>o.id==='hex-1'&&!o.deleted);
+  const first=resources.filter(r=>r.capacity===1&&r.tableId===table?.id).sort((a,b)=>a.shortCode.localeCompare(b.shortCode));
+  if(table&&first.length===6){
+    const yaw=table.rotation[1],cos=Math.cos(yaw),sin=Math.sin(yaw);
+    first.forEach((resource,i)=>{
+      const chair=objects.find(o=>o.id===resource.id),angle=i*Math.PI/3;
+      const x=Math.sin(angle)*1.15*table.scale[0],z=-Math.cos(angle)*1.15*table.scale[2];
+      chair.position[0]=table.position[0]+x*cos+z*sin;
+      chair.position[2]=table.position[2]-x*sin+z*cos;
     });
   }
   return {...data,objects};
