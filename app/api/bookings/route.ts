@@ -19,7 +19,7 @@ export async function POST(r:Request){
  const u=await visitor(r),json=(b:unknown,s=200)=>response(b,s,u.cookie);
  if(!sameOrigin(r))return json({error:'Yêu cầu không hợp lệ.'},403);
  let b:any;try{b=await r.json()}catch{return json({error:'Dữ liệu không hợp lệ.'},400)}
- if(b?.action)return json({error:'Người đăng ký không được tự sửa hoặc hủy. Vui lòng liên hệ admin.'},403);
+ if(b?.action)return json({error:'Lượt đặt này không hỗ trợ tự sửa hoặc hủy.'},403);
  if(!b||typeof b!=='object')return json({error:'Dữ liệu đăng ký không hợp lệ.'},400);
 
  const requested=Array.isArray(b.seatIds)?b.seatIds:[b.seatId];
@@ -55,7 +55,7 @@ export async function POST(r:Request){
 
  // Durable per-visitor storage-abuse guard. Retries of saved IDs do not consume quota.
  const recent=await env.DB!.prepare("SELECT COUNT(*) n FROM seat_bookings WHERE user_id=? AND created_at>=?").bind(u.userId,new Date(Date.now()-3600000).toISOString()).first();
- if(Number(recent?.n||0)+pending.length>120){const limited=json({error:'Phiên này đã gửi nhiều lượt trong một giờ. Vui lòng đợi hoặc liên hệ quản lý.'},429);limited.headers.set('Retry-After','3600');return limited;}
+ if(Number(recent?.n||0)+pending.length>120){const limited=json({error:'Phiên này đã gửi nhiều lượt trong một giờ. Vui lòng thử lại sau.'},429);limited.headers.set('Retry-After','3600');return limited;}
 
  const space=await env.DB!.prepare('SELECT data,revision FROM spatial_spaces WHERE id=?').bind('main').first();
  if(!space)return json({error:'Sơ đồ chỗ ngồi chưa được áp dụng.'},409);

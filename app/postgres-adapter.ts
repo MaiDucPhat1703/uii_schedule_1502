@@ -5,7 +5,8 @@ export function postgresSQL(source:string){
  sql=sql.replace(/json_array\(([^()]+)\)/g,'jsonb_build_array($1)::text');
  let pos=0;
  while((pos=sql.indexOf('json_each(',pos))!==-1){let i=pos+10,depth=1,quote=false;for(;i<sql.length;i++){if(sql[i]==="'"){if(quote&&sql[i+1]==="'"){i++;continue}quote=!quote}if(!quote){if(sql[i]==='(')depth++;if(sql[i]===')'&&--depth===0)break}}
- const expression=sql.slice(pos+10,i);const replacement='jsonb_array_elements_text(('+expression+')::jsonb)';sql=sql.slice(0,pos)+replacement+sql.slice(i+1);pos+=replacement.length;}
+ // Force text parameter inference: postgres.js otherwise JSON-encodes JSON strings twice.
+ const expression=sql.slice(pos+10,i);const replacement='jsonb_array_elements_text(('+expression+')::text::jsonb)';sql=sql.slice(0,pos)+replacement+sql.slice(i+1);pos+=replacement.length;}
  sql=sql.replace(/\)\s+(startMinute|endMinute)\b/g,') AS "$1"');
  let n=0,quoted=false,result='';for(let i=0;i<sql.length;i++){const c=sql[i];if(c==="'"){if(quoted&&sql[i+1]==="'"){result+="''";i++;continue}quoted=!quoted}result+=c==='?'&&!quoted?'$'+(++n):c}return result;
 }

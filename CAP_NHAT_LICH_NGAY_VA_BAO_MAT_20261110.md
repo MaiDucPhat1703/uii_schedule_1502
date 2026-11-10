@@ -1,3 +1,15 @@
+# Cập nhật bổ sung — thông báo và đồng bộ layout
+
+- Trang khách báo “Đặt chỗ thành công.”; đặt lặp báo số lượt thành công. Bỏ các ghi chú về quy trình duyệt nội bộ.
+- Bỏ danh sách “Các chỗ có lịch” dưới sơ đồ theo yêu cầu; giữ màu lịch cả ngày và lịch chi tiết khi bấm ghế.
+- Sửa lỗi PostgreSQL `cannot extract elements from a scalar` khi áp dụng sơ đồ: tham số JSON phải được bind kiểu text trước khi chuyển sang JSONB, tránh driver mã hóa hai lần.
+- Sơ đồ khách giữ tọa độ/kích thước/góc xoay đã lưu; không tự dàn lại ghế. Tổng quan vẽ cả bàn chữ nhật, ghế và đồ nội thất còn hiện hữu.
+- Giữ nguyên quy trình xử lý trạng thái, kiểm tra trùng lịch, quyền admin, chống ghi đè revision và bảo vệ ghế có lượt đặt tương lai.
+- Nút “Lưu & cập nhật đặt chỗ” lưu và áp dụng; “Lưu bản nháp mới” chỉ lưu nháp.
+- 20 bài kiểm thử, gồm regression kiểm tra kiểu tham số JSON của PostgreSQL, tọa độ ghế sau khi refresh, nội dung thông báo và bảo vệ đặt chỗ trùng.
+
+---
+
 # Lịch cả ngày và rà soát bảo mật — 10/11/2026
 
 ## Cách sử dụng mới

@@ -38,7 +38,7 @@ function postgresSQL(source2) {
       }
     }
     const expression = sql2.slice(pos + 10, i);
-    const replacement = "jsonb_array_elements_text((" + expression + ")::jsonb)";
+    const replacement = "jsonb_array_elements_text((" + expression + ")::text::jsonb)";
     sql2 = sql2.slice(0, pos) + replacement + sql2.slice(i + 1);
     pos += replacement.length;
   }
@@ -265,7 +265,7 @@ async function POST2(r) {
   } catch {
     return json7({ error: "D\u1EEF li\u1EC7u kh\xF4ng h\u1EE3p l\u1EC7." }, 400);
   }
-  if (b?.action) return json7({ error: "Ng\u01B0\u1EDDi \u0111\u0103ng k\xFD kh\xF4ng \u0111\u01B0\u1EE3c t\u1EF1 s\u1EEDa ho\u1EB7c h\u1EE7y. Vui l\xF2ng li\xEAn h\u1EC7 admin." }, 403);
+  if (b?.action) return json7({ error: "L\u01B0\u1EE3t \u0111\u1EB7t n\xE0y kh\xF4ng h\u1ED7 tr\u1EE3 t\u1EF1 s\u1EEDa ho\u1EB7c h\u1EE7y." }, 403);
   if (!b || typeof b !== "object") return json7({ error: "D\u1EEF li\u1EC7u \u0111\u0103ng k\xFD kh\xF4ng h\u1EE3p l\u1EC7." }, 400);
   const requested = Array.isArray(b.seatIds) ? b.seatIds : [b.seatId];
   if (!requested.length || requested.length > 36 || requested.some((id) => typeof id !== "string" || !id.length || id.length > 100) || new Set(requested).size !== requested.length) return json7({ error: "Ch\u1ECDn t\u1EEB 1 \u0111\u1EBFn 36 gh\u1EBF kh\xE1c nhau." }, 400);
@@ -301,7 +301,7 @@ async function POST2(r) {
   if (!pending.length) return json7({ ok: true, id: occurrences[0].requestId, status: "pending", count: occurrences.length, alreadySaved: true });
   const recent = await env.DB.prepare("SELECT COUNT(*) n FROM seat_bookings WHERE user_id=? AND created_at>=?").bind(u.userId, new Date(Date.now() - 36e5).toISOString()).first();
   if (Number(recent?.n || 0) + pending.length > 120) {
-    const limited = json7({ error: "Phi\xEAn n\xE0y \u0111\xE3 g\u1EEDi nhi\u1EC1u l\u01B0\u1EE3t trong m\u1ED9t gi\u1EDD. Vui l\xF2ng \u0111\u1EE3i ho\u1EB7c li\xEAn h\u1EC7 qu\u1EA3n l\xFD." }, 429);
+    const limited = json7({ error: "Phi\xEAn n\xE0y \u0111\xE3 g\u1EEDi nhi\u1EC1u l\u01B0\u1EE3t trong m\u1ED9t gi\u1EDD. Vui l\xF2ng th\u1EED l\u1EA1i sau." }, 429);
     limited.headers.set("Retry-After", "3600");
     return limited;
   }
