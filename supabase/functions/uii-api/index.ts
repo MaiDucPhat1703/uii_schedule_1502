@@ -318,8 +318,15 @@ async function POST2(r) {
   const resourceRevision = Number(space.revision), buffer = config2.policy.bufferMinutes;
   for (const occurrence of pending) {
     const placeholders = conflictIds.map(() => "?").join(",");
-    const conflict = await env.DB.prepare(`SELECT id FROM seat_bookings WHERE EXISTS (SELECT 1 FROM json_each(COALESCE(seat_ids,json_array(seat_id))) held WHERE held.value IN (${placeholders})) AND day=? AND status='active' AND COALESCE(start_minute,start_slot*30) < ? AND COALESCE(end_minute,end_slot*30) > ? LIMIT 1`).bind(...conflictIds, occurrence.day, occurrence.endMinute + buffer, occurrence.startMinute - buffer).first();
-    if (conflict) return json7({ error: conflictMessage, conflictDay: occurrence.day }, 409);
+    const occupied = await env.DB.prepare(`SELECT seat_id,seat_ids FROM seat_bookings WHERE EXISTS (SELECT 1 FROM json_each(COALESCE(seat_ids,json_array(seat_id))) held WHERE held.value IN (${placeholders})) AND day=? AND status='active' AND COALESCE(start_minute,start_slot*30) < ? AND COALESCE(end_minute,end_slot*30) > ?`).bind(...conflictIds, occurrence.day, occurrence.endMinute + buffer, occurrence.startMinute - buffer).all();
+    if (occupied.results.length) {
+      const occupiedIds = /* @__PURE__ */ new Set();
+      for (const row of occupied.results) {
+        for (const id of row.seat_ids ? JSON.parse(row.seat_ids) : [row.seat_id]) occupiedIds.add(id);
+      }
+      const conflictSeatIds = chosen.filter((seat) => [seat.id, ...seat.members].some((id) => occupiedIds.has(id))).map((seat) => seat.id);
+      return json7({ error: occurrences.length > 1 ? conflictMessage : "C\xF3 gh\u1EBF \u0111\xE3 \u0111\u01B0\u1EE3c \u0111\u1EB7t trong khung gi\u1EDD n\xE0y.", conflictDay: occurrence.day, conflictSeatIds }, 409);
+    }
   }
   const statements = pending.map((occurrence) => {
     const columns = "id,user_id,seat_id,seat_label,day,start_slot,end_slot,display_name,organization,status,created_at,email,phone,leader,subject,description,group_type,attendees,resource_type,campus,start_minute,end_minute,seat_ids";

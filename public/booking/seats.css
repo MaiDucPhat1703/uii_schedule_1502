@@ -53,3 +53,20 @@ body{font-size:14px}label{font-size:12px}.intro p,.section-top p,.seat-detail p{
 
 /* Tick density follows the actual timeline width, including sidebar and mobile layouts. */
 .time-axis{position:relative;height:24px;margin:8px 0 0}.time-axis span{position:absolute;display:block!important;white-space:nowrap;font-size:11px!important;line-height:16px;transform:translateX(-50%)}.time-axis span.axis-first{transform:none}.time-axis span.axis-last{transform:translateX(-100%)}.day-track .block{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+.day-track .block.busy{padding:0 3px;border:0;border-radius:0;cursor:pointer;pointer-events:auto}
+.day-track .block.busy:hover,.day-track .block.busy:focus-visible,.day-events.busy:hover{background:#9ba7b2}
+.day-track .block.busy:focus-visible{outline:2px solid #294b66;outline-offset:-2px}
+.day-track .range-overlay{pointer-events:none}
+.day-track .range-overlay.conflict{border-color:#a04539;background:#ad594024;border-style:dashed}
+.day-events.busy{display:block;width:100%;text-align:left;cursor:pointer}
+.seat.selection-conflict .seat-body{stroke:#a04539;stroke-width:.06}
+.seat-conflicts{padding:12px;margin:12px 0;background:#fff4ed;border:1px solid #e9c0aa;border-radius:8px;color:#76392f}
+.seat-conflicts ul{padding-left:20px;margin:8px 0}
+.seat-conflicts li+li{margin-top:5px}
+.seat-conflicts p{margin:8px 0}
+#busyDetail{max-width:420px}
+#busyDetail p{margin:10px 0}
+#closeBusyDetail{align-self:flex-start}
+#formConflict{color:#76392f}
+#formConflict:empty{display:none}

@@ -73,8 +73,15 @@ export async function POST(r:Request){
  // so this preflight and the following inserts are atomic with respect to other booking requests.
  for(const occurrence of pending){
   const placeholders=conflictIds.map(()=>'?').join(',');
-  const conflict=await env.DB!.prepare(`SELECT id FROM seat_bookings WHERE EXISTS (SELECT 1 FROM json_each(COALESCE(seat_ids,json_array(seat_id))) held WHERE held.value IN (${placeholders})) AND day=? AND status='active' AND COALESCE(start_minute,start_slot*30) < ? AND COALESCE(end_minute,end_slot*30) > ? LIMIT 1`).bind(...conflictIds,occurrence.day,occurrence.endMinute+buffer,occurrence.startMinute-buffer).first();
-  if(conflict)return json({error:conflictMessage,conflictDay:occurrence.day},409);
+  const occupied=await env.DB!.prepare(`SELECT seat_id,seat_ids FROM seat_bookings WHERE EXISTS (SELECT 1 FROM json_each(COALESCE(seat_ids,json_array(seat_id))) held WHERE held.value IN (${placeholders})) AND day=? AND status='active' AND COALESCE(start_minute,start_slot*30) < ? AND COALESCE(end_minute,end_slot*30) > ?`).bind(...conflictIds,occurrence.day,occurrence.endMinute+buffer,occurrence.startMinute-buffer).all();
+  if(occupied.results.length){
+   const occupiedIds=new Set<string>();
+   for(const row of occupied.results){
+    for(const id of row.seat_ids?JSON.parse(row.seat_ids as string):[row.seat_id])occupiedIds.add(id);
+   }
+   const conflictSeatIds=chosen.filter(seat=>[seat.id,...seat.members].some(id=>occupiedIds.has(id))).map(seat=>seat.id);
+   return json({error:occurrences.length>1?conflictMessage:'Có ghế đã được đặt trong khung giờ này.',conflictDay:occurrence.day,conflictSeatIds},409);
+  }
  }
 
  const statements=pending.map(occurrence=>{

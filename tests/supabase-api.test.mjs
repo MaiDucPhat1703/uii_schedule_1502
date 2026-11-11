@@ -27,6 +27,9 @@ await test('Supabase: server-side permissions, private schema, guest booking, at
  const list=(await ok('/api/admin/bookings',undefined,{admin:true})).body;const row=list.bookings.find(r=>r.status==='active');assert.equal(row.display_name,"Phát O'Brien");
  const edit={action:'edit',id:row.id,expectedToken:row.edit_token,seatIds:['chair-2'],day,startMinute:615,endMinute:675,displayName:'Đã sửa',organization:'Đơn vị mới',email:'edit@example.com',phone:'0911111111',leader:'Người mới',subject:'Tiêu đề mới',description:'Nội dung mới',groupType:'faculty',adminNote:'Ghi chú'};
  await ok('/api/admin/bookings',edit,{admin:true});assert.equal((await call('/api/admin/bookings',edit,{admin:true})).status,409);
+ const singleSeatConflict=await call('/api/bookings',{...body,requestId:'partly-blocked',startMinute:615,endMinute:675},{visitor:guest2});
+ assert.equal(singleSeatConflict.status,409);assert.deepEqual(singleSeatConflict.body.conflictSeatIds,['chair-2']);
+ assert.equal(singleSeatConflict.body.conflictDay,day);assert.ok(!JSON.stringify(singleSeatConflict.body).includes('edit@example.com'));
  const edited=(await db.query('SELECT * FROM uii.seat_bookings WHERE id=$1',[row.id])).rows[0];assert.equal(edited.start_minute,615);assert.equal(edited.start_slot,20.5);assert.equal(edited.email,'edit@example.com');
  await ok('/api/space',{name:'UII moved',data,revision:1},{admin:true});const snapshot=(await ok('/api/admin/backup',undefined,{admin:true})).body;assert.equal(Object.keys(snapshot.tables).length,6);assert.ok(!Object.hasOwn(snapshot.tables,'admin_users'));assert.equal(snapshot.tables.seat_bookings.length,5);
  await ok('/api/admin/bookings',{action:'cancel',id:row.id},{admin:true});assert.equal((await ok('/api/bookings?day='+day,undefined,{visitor})).body.reservations.length,0);
@@ -60,7 +63,7 @@ await test('Regression: repeated booking is atomic if a later week conflicts',as
  const base={resourceType:'seat',seatIds:[MEETING_TABLE],attendees:6,displayName:'Local recurrence QA',organization:'QA',groupType:'other',email:'qa@example.com',phone:'0000000000',leader:'QA',subject:'Atomic recurrence',description:'',startMinute:900,endMinute:960};
  await ok('/api/bookings',{...base,requestId:'series-blocker',day:days[1]},{visitor});await ok('/api/admin/bookings',{id:'series-blocker',action:'approve'},{admin:true});
  const occurrences=days.map((day,i)=>({requestId:'atomic-series-'+i,day,startMinute:900,endMinute:960}));
- const conflict=await call('/api/bookings',{...base,requestId:occurrences[0].requestId,day:days[0],occurrences},{visitor});assert.equal(conflict.status,409);assert.equal(conflict.body.conflictDay,days[1]);
+ const conflict=await call('/api/bookings',{...base,requestId:occurrences[0].requestId,day:days[0],occurrences},{visitor});assert.equal(conflict.status,409);assert.equal(conflict.body.conflictDay,days[1]);assert.deepEqual(conflict.body.conflictSeatIds,[MEETING_TABLE]);
  assert.equal((await db.query("SELECT id FROM uii.seat_bookings WHERE id LIKE 'atomic-series-%'")).rows.length,0);
 });
 await test('Security: enforce JSON and streamed byte limits, minimize guest data and protect every admin write',async()=>{

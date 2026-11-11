@@ -30,6 +30,24 @@ try{let source=fs.readFileSync('public/booking/seats.js','utf8').replace(/from '
  assert.equal(all(get('mapSections')).filter(n=>n.attrs['data-seat-id']).length,36);assert.equal(get('seatList').children.length,0,'no duplicate seat catalogue');assert.equal(get('tablePicker').children.length,0,'no table toolbar');
  get('day').value=new Date(Date.now()+86400000).toLocaleDateString('en-CA',{timeZone:'Asia/Ho_Chi_Minh'});await get('refresh').onclick();chair('chair-36').onclick();chair('chair-35').onclick();chair('chair-42').onclick();assert.equal(get('basketItems').children.length,3,'pick across tables directly on spatial map');get('proceed').onclick();assert.equal(get('bookingModal').open,true);assert.equal(get('formSeat').textContent,'Đặt 3 chỗ ngồi');assert.equal(get('formSeats').children.length,2);assert.equal(get('formSeats').children[0].children[0].textContent,'Bàn 1');assert.equal(get('formSeats').children[0].children[1].textContent,'Ghế 01, 02');assert.equal(all(get('mapSections')).filter(n=>n.tagName==='text'&&/^Bàn [1-6]$/.test(n.textContent)).length,6,'table numbers are visible');assert.ok(!all(get('mapSections')).some(n=>n.tagName==='text'&&/ĐẶT/.test(n.textContent)),'no booking instruction on tabletops');get('closeForm').onclick();get('clearSeats').onclick();chair('chair-36').onclick();
  let track=get('selectedTimeline').children[0];const x=m=>(m-420)/840*600,event=x=>({button:0,clientX:x,pointerId:1,preventDefault(){}});track.onpointerdown(event(x(600)));track.onpointermove(event(x(720)));track.onpointerup(event(x(720)));assert.equal(Number(get('start').value),600);assert.equal(Number(get('end').value),720);
+ // Adjacent bookings at 15:00 block only the chair that has a 15:00 reservation.
+ chair('chair-35').onclick();
+ reservations=[
+  ...['chair-36','chair-35'].map(seatId=>({seatId,resourceType:'seat',startMinute:780,endMinute:900,status:'active'})),
+  {seatId:'chair-36',resourceType:'seat',startMinute:900,endMinute:960,status:'active',displayName:'Private booker',email:'private@example.test'}
+ ];
+ get('start').value=900;get('end').value=960;await get('refresh').onclick();
+ assert.equal(get('proceed').disabled,true);assert.equal(get('seatConflicts').hidden,false);
+ assert.equal(get('conflictSeats').children.length,1);assert.match(get('conflictSeats').children[0].textContent,/Ghế 01.*15:00–16:00/);
+ assert.match(get('conflictFree').textContent,/Ghế 02/);
+ assert.match(chair('chair-36').attrs.class,/selection-conflict/);
+ const busy=get('selectedTimeline').children[0].children.find(n=>n.className==='block busy');
+ busy.onclick();assert.equal(get('busyDetail').open,true);assert.match(get('busyDetailSeat').textContent,/Ghế 02/);
+ assert.match(get('busyDetailTime').textContent,/13:00–15:00/);assert.equal(Number(get('start').value),900);
+ assert.ok(!all(get('busyDetail')).some(n=>String(n.textContent).includes('private@example.test')));
+ get('closeBusyDetail').onclick();get('removeConflicts').onclick();
+ assert.equal(get('basketItems').children.length,1);assert.equal(get('proceed').disabled,false);
+ reservations=[];get('start').value=600;get('end').value=720;await get('refresh').onclick();
  // Every working chair faces its saved table; overview and detail share the same geometry.
  for(const resource of bookingResources({objects}).filter(r=>r.capacity===1&&r.tableId)){
   const node=chair(resource.id),table=objects.find(o=>o.id===resource.tableId),angle=Number(node.attrs.transform.match(/rotate\(([^)]+)\)/)[1])*Math.PI/180;
