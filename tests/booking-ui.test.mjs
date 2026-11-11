@@ -2,7 +2,9 @@
 import assert from 'node:assert/strict';import fs from 'node:fs';import {pathToFileURL} from 'node:url';import {buildModel} from '../public/studio/model.js';import {bookingResources,MEETING_TABLE} from '../public/booking/resources.js';
 class Element{constructor(tag='div'){this.tagName=tag;this.children=[];this.style={};this.attrs={};this.value='';this.hidden=false;this.checked=false;this.className='';this.textContent='';this.classList={toggle(){}};this.open=false}append(...nodes){this.children.push(...nodes)}replaceChildren(...nodes){this.children=[...nodes]}setAttribute(k,v){this.attrs[k]=String(v)}getAttribute(k){return this.attrs[k]}add(node){this.children.push(node);if(!this.value)this.value=String(node.value)}addEventListener(){}querySelector(){return new Element()}scrollIntoView(){}getBoundingClientRect(){return {left:0,width:600}}setPointerCapture(){}hasPointerCapture(){return true}releasePointerCapture(){}remove(){}showModal(){this.open=true}close(){this.open=false}}
 const html=fs.readFileSync('public/booking/index.html','utf8'),nodes=new Map([...html.matchAll(/id="([^"]+)"/g)].map(m=>[m[1],new Element()]));
-globalThis.document={hidden:false,getElementById:id=>{assert.ok(nodes.has(id),'missing HTML target '+id);return nodes.get(id)},createElement:tag=>new Element(tag),createElementNS:(_,tag)=>new Element(tag),createTextNode:text=>({textContent:text}),querySelectorAll:()=>[],addEventListener(){}};globalThis.Option=class{constructor(text,value){this.text=text;this.value=value}};globalThis.innerWidth=1280;globalThis.localStorage={getItem(){return ''},setItem(){}};
+const staticCopy={nodeValue:'Lịch chỗ ngồi'},languagePreference=new Map();
+globalThis.NodeFilter={SHOW_TEXT:4};
+globalThis.document={documentElement:Object.assign(new Element('html'),{querySelectorAll:()=>[]}),createTreeWalker:()=>{let found=false;return {currentNode:staticCopy,nextNode(){if(found)return false;found=true;return true}}},hidden:false,getElementById:id=>{assert.ok(nodes.has(id),'missing HTML target '+id);return nodes.get(id)},createElement:tag=>new Element(tag),createElementNS:(_,tag)=>new Element(tag),createTextNode:text=>({textContent:text}),querySelectorAll:()=>[],addEventListener(){}};globalThis.Option=class{constructor(text,value){this.text=text;this.value=value}};globalThis.innerWidth=1280;globalThis.localStorage={getItem:key=>languagePreference.get(key),setItem:(key,value)=>languagePreference.set(key,value)};
 const interval=globalThis.setInterval,timeout=globalThis.setTimeout;globalThis.setInterval=()=>0;globalThis.setTimeout=()=>0;
 const model=buildModel();const objects=model.editItems.map(i=>({id:i.id,label:i.label,position:i.object.position.toArray(),rotation:i.object.rotation.toArray().slice(0,3),scale:i.object.scale.toArray(),bookable:i.kind==='chair'&&Number(i.id.slice(6))>=33&&Number(i.id.slice(6))<=68,deleted:false}));
 objects.push({id:MEETING_TABLE,source:'hex-3',position:[14,0,-6],rotation:[0,0,0],scale:[1,1,1],bookable:false});for(let i=0;i<6;i++)objects.push({id:'meeting-'+i,source:'chair-'+(45+i),position:[14+Math.cos(i*Math.PI/3),0,-6+Math.sin(i*Math.PI/3)],rotation:[0,0,0],scale:[1,1,1],bookable:true});
@@ -71,6 +73,16 @@ try{let source=fs.readFileSync('public/booking/seats.js','utf8').replace(/from '
  reservations=[{seatId:MEETING_TABLE,resourceType:'seat',startMinute:600,endMinute:720,status:'pending'}];get('start').value=600;get('end').value=720;await get('refresh').onclick();assert.equal(get('proceed').disabled,false,'pending request does not hold the seat');assert.equal(get('selectedTimeline').children[0].children.filter(n=>n.className==='block busy').length,0,'pending block is absent from timeline');assert.ok(!all(get('selectedTimeline')).some(n=>(n.textContent||'').includes('duyệt')));
  console.log('PASS minimal guest interface, spatial multi-selection across tables, live layout coordinates, shared time drag, six-seat table and occupied-slot protection');
 
+ const selectedStart=get('start').value,selectedEnd=get('end').value,selectedDay=get('day').value;
+ assert.equal(document.documentElement.lang,'vi');
+ get('guestLanguageToggle').onclick();
+ assert.equal(document.documentElement.lang,'en');assert.equal(staticCopy.nodeValue,'Seat schedule');
+ assert.equal(languagePreference.get('uii-guest-language'),'en');
+ assert.match(get('selectedTitle').textContent,/Table 7/);assert.match(get('proceed').textContent,/Book 6 selected seats/);
+ assert.equal(get('start').value,selectedStart);assert.equal(get('end').value,selectedEnd);assert.equal(get('day').value,selectedDay);
+ assert.equal(get('proceed').disabled,false);
+ get('proceed').onclick();assert.match(get('formSeat').textContent,/Book 6 seats/);assert.equal(get('repeatPreview').textContent,'One booking will be created.');get('closeForm').onclick();
+ get('guestLanguageToggle').onclick();assert.equal(document.documentElement.lang,'vi');assert.equal(staticCopy.nodeValue,'Lịch chỗ ngồi');
  const originalFetch=globalThis.fetch;let finish,posts=0;
  globalThis.fetch=(path,options)=>options?.method==='POST'&&path==='/api/bookings'?(posts++,new Promise(resolve=>finish=resolve)):originalFetch(path,options);
  get('proceed').onclick();const submission=get('bookingForm').onsubmit({preventDefault(){}});

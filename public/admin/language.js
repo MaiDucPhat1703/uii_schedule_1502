@@ -1,3 +1,5 @@
+import {createInterfaceLanguage} from '../booking/interface-language.js';
+
 const english = {
  "Quản lý đặt chỗ · Phòng 15.02 · UII": "Booking management · Room 15.02 · UII",
  "Đóng menu": "Close menu",
@@ -195,51 +197,7 @@ const english = {
  "6 chỗ": "6 seats"
 };
 
-const storageKey = 'uii-admin-language';
-let language = 'vi';
-try {
- if(localStorage.getItem(storageKey)==='en')language='en';
-}catch{}
-
-export const adminLanguage=()=>language;
-export function t(key, values={}){
- const message=language==='en'&&Object.hasOwn(english,key)?english[key]:key;
- return String(message??'').replace(/\{(\w+)\}/g,(token,name)=>values[name]??token);
-}
-
-const copy=[];
-export function captureAdminCopy(root){
- const walker=document.createTreeWalker(root,NodeFilter.SHOW_TEXT);
- while(walker.nextNode()){
-  const node=walker.currentNode,source=node.nodeValue,key=source.trim();
-  if(!Object.hasOwn(english,key))continue;
-  copy.push(()=>{node.nodeValue=source.replace(key,()=>t(key))});
- }
- for(const node of root.querySelectorAll('[aria-label],[title],[placeholder]')){
-  for(const attr of ['aria-label','title','placeholder']){
-   const key=node.getAttribute(attr);
-   if(Object.hasOwn(english,key))copy.push(()=>node.setAttribute(attr,t(key)));
-  }
- }
-}
-export function applyAdminLanguage(){
- document.documentElement.lang=language;
- for(const update of copy)update();
-}
-export function toggleAdminLanguage(){
- language=language==='vi'?'en':'vi';
- try{localStorage.setItem(storageKey,language)}catch{}
- applyAdminLanguage();
-}
-
-// Translate generated table/seat labels, preserving custom names and booking text.
-export function adminSeatLabel(label){
- if(language==='vi')return label;
- return String(label??'').split('\n').map(line=>{
-  const match=/^Bàn (\d+)(?: · (.*))?$/.exec(line);
-  if(!match)return line;
-  const [,number,detail]=match;
-  const seat=/^Ghế (\d+(?:, \d+)*)$/.exec(detail||'');
-  return t('Bàn {number}',{number})+(detail?' · '+(seat?t('Ghế {number}',{number:seat[1]}):t(detail)):'');
- }).join('\n');
-}
+export const {
+ current:adminLanguage,t,capture:captureAdminCopy,apply:applyAdminLanguage,
+ toggle:toggleAdminLanguage,seatLabel:adminSeatLabel
+}=createInterfaceLanguage('uii-admin-language',english);
