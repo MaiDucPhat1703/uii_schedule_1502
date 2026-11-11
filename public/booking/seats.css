@@ -67,7 +67,20 @@ body{font-size:14px}label{font-size:12px}.intro p,.section-top p,.seat-detail p{
 .seat-conflicts p{margin:8px 0}
 #busyDetail{max-width:420px}
 #busyDetail p{margin:10px 0}
-#closeBusyDetail{align-self:flex-start}
+#closeBusyDetail{
+ align-self:flex-start;
+ flex:0 0 44px;
+ width:44px;
+ height:44px;
+ padding:0;
+ border-radius:50%;
+ background:#edf2ed;
+ color:#294538;
+ font-size:29px;
+ line-height:1;
+}
+#closeBusyDetail:hover{background:#dde8de}
+#closeBusyDetail:focus-visible{outline:2px solid #386e52;outline-offset:2px}
 #formConflict{color:#76392f}
 #formConflict:empty{display:none}
 

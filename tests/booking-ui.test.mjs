@@ -33,7 +33,7 @@ try{let source=fs.readFileSync('public/booking/seats.js','utf8').replace(/from '
  // Adjacent bookings at 15:00 block only the chair that has a 15:00 reservation.
  chair('chair-35').onclick();
  reservations=[
-  ...['chair-36','chair-35'].map(seatId=>({seatId,resourceType:'seat',startMinute:780,endMinute:900,status:'active',booker:{name:'Khách mẫu',email:'k•••@example.test',phone:'••••••1234'}})),
+  ...['chair-36','chair-35'].map(seatId=>({seatId,resourceType:'seat',startMinute:780,endMinute:900,status:'active',booker:{name:'Khách mẫu',email:'khach@example.test',phone:'0900001234',purpose:'Họp nhóm'}})),
   {seatId:'chair-36',resourceType:'seat',startMinute:900,endMinute:960,status:'active',displayName:'Private booker',email:'private@example.test'}
  ];
  get('start').value=900;get('end').value=960;await get('refresh').onclick();
@@ -43,9 +43,16 @@ try{let source=fs.readFileSync('public/booking/seats.js','utf8').replace(/from '
  assert.match(chair('chair-36').attrs.class,/selection-conflict/);
  const busy=get('selectedTimeline').children[0].children.find(n=>n.className==='block busy');
  busy.onclick();assert.equal(get('busyDetail').open,true);assert.match(get('busyDetailSeat').textContent,/Ghế 02/);
- assert.match(get('busyDetailTime').textContent,/13:00–15:00/);assert.equal(get('busyBookerName').textContent,'Khách mẫu');assert.equal(get('busyBookerEmail').textContent,'k•••@example.test');assert.equal(get('busyBookerPhone').textContent,'••••••1234');assert.equal(Number(get('start').value),900);
+ assert.match(get('busyDetailTime').textContent,/13:00–15:00/);assert.equal(get('busyBookerName').textContent,'Khách mẫu');assert.equal(get('busyBookerEmail').textContent,'khach@example.test');assert.equal(get('busyBookerPhone').textContent,'0900001234');assert.equal(get('busyBookerPurpose').textContent,'Họp nhóm');assert.equal(Number(get('start').value),900);
  assert.ok(!all(get('busyDetail')).some(n=>String(n.textContent).includes('private@example.test')));
- get('closeBusyDetail').onclick();get('removeConflicts').onclick();
+ const dialog=get('busyDetail');
+ dialog.getBoundingClientRect=()=>({left:100,right:500,top:100,bottom:450});
+ const inside={target:dialog,clientX:120,clientY:120},outside={target:dialog,clientX:50,clientY:120};
+ dialog.onpointerdown(inside);dialog.onclick(inside);assert.equal(dialog.open,true);
+ dialog.onpointerdown(inside);dialog.onclick(outside);assert.equal(dialog.open,true);
+ dialog.onpointerdown(outside);dialog.onclick(outside);assert.equal(dialog.open,false);
+ busy.onclick();get('closeBusyDetail').onclick();assert.equal(dialog.open,false);
+ get('removeConflicts').onclick();
  assert.equal(get('basketItems').children.length,1);assert.equal(get('proceed').disabled,false);
  reservations=[];get('start').value=600;get('end').value=720;await get('refresh').onclick();
  // Every working chair faces its saved table; overview and detail share the same geometry.

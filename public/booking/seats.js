@@ -108,9 +108,24 @@ function showBusyDetails(seat, interval){
  $('busyBookerName').textContent=booker?.name||'—';
  $('busyBookerEmail').textContent=booker?.email||'—';
  $('busyBookerPhone').textContent=booker?.phone||'—';
+ $('busyBookerPurpose').textContent=booker?.purpose||'—';
  $('busyDetail').showModal();
 }
-$('closeBusyDetail').onclick=()=>$('busyDetail').close();
+const busyDetail=$('busyDetail');
+$('closeBusyDetail').onclick=()=>busyDetail.close();
+function isBusyDetailBackdrop(event){
+ if(event.target!==busyDetail)return false;
+ const bounds=busyDetail.getBoundingClientRect();
+ return event.clientX<bounds.left||event.clientX>bounds.right||
+  event.clientY<bounds.top||event.clientY>bounds.bottom;
+}
+let backdropPressed=false;
+busyDetail.onpointerdown=event=>{backdropPressed=isBusyDetailBackdrop(event)};
+busyDetail.onpointercancel=()=>{backdropPressed=false};
+busyDetail.onclick=event=>{
+ if(backdropPressed&&isBusyDetailBackdrop(event))busyDetail.close();
+ backdropPressed=false;
+};
 
 function renderConflicts(batch){
  const panel=$('seatConflicts'),list=$('conflictSeats');
