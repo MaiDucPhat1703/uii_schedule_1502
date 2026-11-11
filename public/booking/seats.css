@@ -35,30 +35,31 @@ body{font-size:14px}label{font-size:12px}.intro p,.section-top p,.seat-detail p{
 /* Whole-day overview and the independent booking interval. */
 .day-picker{
  display:grid;
- grid-template-columns:minmax(190px,1fr) minmax(0,1.5fr) minmax(210px,1fr);
+ grid-template-columns:minmax(160px,1fr) minmax(0,1.5fr) minmax(190px,1fr);
  align-items:center;
- gap:clamp(18px,2.5vw,36px);
- padding:clamp(20px,2.2vw,32px);
+ gap:clamp(12px,1.5vw,22px);
+ padding:14px 20px;
  background:#fff;
  border:1px solid var(--line);
  border-radius:12px;
  margin-bottom:14px;
 }
-.day-picker>label{min-width:0;margin:0;font-size:15px}
-.day-picker input{min-height:52px;font-size:19px}
+.day-picker>label{min-width:0;width:100%;max-width:210px;margin:0;font-size:13px}
+.day-picker input{min-height:40px;margin-top:5px;padding:7px 10px;font-size:16px}
 .day-intro{min-width:0;text-align:center}
-.day-intro strong{display:block;font-size:clamp(21px,2.15vw,28px);line-height:1.3}
+.day-intro strong{display:block;font-size:clamp(17px,1.55vw,20px);line-height:1.3}
 .day-totals{
  display:flex;
  align-items:center;
  justify-content:center;
- min-height:62px;
- padding:12px 16px;
+ justify-self:end;
+ max-width:280px;
+ padding:8px 12px;
  border:1px solid #dce8d2;
  border-radius:8px;
  background:#f1f6ed;
- font-size:16px;
- line-height:1.5;
+ font-size:13px;
+ line-height:1.45;
  color:#34573c;
  text-align:center;
 }
@@ -66,8 +67,8 @@ body{font-size:14px}label{font-size:12px}.intro p,.section-top p,.seat-detail p{
 .map-mode-controls{display:flex;gap:8px;flex-wrap:wrap}.map-mode-controls button{font-size:13px;padding:11px 14px}.map-mode-controls button[aria-pressed=true]{background:#386e52;border-color:#386e52;color:white}.map-mode-hint{font-size:13px;line-height:1.7;color:#596d5b;margin:12px 0 16px}.legend span{display:inline-flex;gap:5px;align-items:center}.legend .scheduled{background:#edc571}
 .seat.scheduled .seat-body{fill:#f4d490;stroke:#aa7b27}.seat.scheduled .seat-back{stroke:#a1762e}.seat.scheduled.selected .seat-body{fill:#f4d490;stroke:#285d44;stroke-width:.065}.seat.scheduled.selected .seat-back{stroke:#285d44}.seat.busy.selected .seat-body{fill:#b8c0c7;stroke:#a45036;stroke-width:.065}
 .day-schedule{padding:24px;background:#fff;border:1px solid var(--line);border-radius:12px;margin-top:24px}.day-schedule-heading{display:flex;justify-content:space-between;align-items:start;gap:20px}.day-schedule h2{font-size:22px;margin:8px 0}.day-schedule-heading p{font-size:13px;line-height:1.7;color:#617466;margin:8px 0 16px}.schedule-public-note{font-size:12px;white-space:nowrap;color:#617466}.day-schedule-row{display:grid;grid-template-columns:190px minmax(0,1fr) 170px;gap:16px;align-items:center;width:100%;text-align:left;padding:16px;margin-top:9px;background:#fffaf0;border-color:#edd8ab}.day-schedule-row strong{font-size:14px}.day-schedule-row>span{font-size:15px;line-height:1.8;color:#765219}.day-schedule-row>small{font-size:12px;color:#486442;text-align:right}.day-schedule-row:hover{background:#fff2d6;border-color:#c39845}
-@media(max-width:900px){.day-picker{grid-template-columns:minmax(165px,1fr) minmax(0,1.5fr);gap:16px}.day-totals{grid-column:1/-1;min-height:48px}.day-schedule-row{grid-template-columns:160px minmax(0,1fr)}.day-schedule-row>small{grid-column:1/-1;text-align:left}.day-schedule-heading{display:block}.schedule-public-note{display:block;margin-bottom:12px}}
-@media(max-width:520px){.day-picker{padding:16px;grid-template-columns:minmax(0,1fr);gap:14px}.day-intro,.day-totals{text-align:left}.day-intro strong{font-size:22px}.day-totals{justify-content:flex-start;font-size:15px}.booking-time-intro{width:100%}.booking-time-intro span{max-width:none}.day-schedule{padding:16px}.day-schedule h2{font-size:19px}.day-schedule-row{grid-template-columns:1fr;gap:7px;padding:13px}.day-schedule-row>small{grid-column:auto}.time-picker{gap:10px}.map-mode-controls button{flex:1;font-size:12px}.map-mode-hint{font-size:12px}}
+@media(max-width:900px){.day-picker{grid-template-columns:minmax(165px,1fr) minmax(0,1.5fr);gap:12px}.day-totals{grid-column:1/-1;justify-self:stretch;max-width:none}.day-schedule-row{grid-template-columns:160px minmax(0,1fr)}.day-schedule-row>small{grid-column:1/-1;text-align:left}.day-schedule-heading{display:block}.schedule-public-note{display:block;margin-bottom:12px}}
+@media(max-width:520px){.day-picker{padding:12px;grid-template-columns:minmax(0,1fr);gap:10px}.day-intro,.day-totals{text-align:left}.day-totals{justify-content:flex-start}.booking-time-intro{width:100%}.booking-time-intro span{max-width:none}.day-schedule{padding:16px}.day-schedule h2{font-size:19px}.day-schedule-row{grid-template-columns:1fr;gap:7px;padding:13px}.day-schedule-row>small{grid-column:auto}.time-picker{gap:10px}.map-mode-controls button{flex:1;font-size:12px}.map-mode-hint{font-size:12px}}
 
 /* Keep the saved floor plan visible beneath the area selection outline. */
 .overview-zone rect{fill-opacity:.06}.overview-zone:hover rect,.overview-zone:focus rect{fill-opacity:.18}.overview-chair{fill:#7f9581;stroke:#526b55;stroke-width:.025;pointer-events:none}
