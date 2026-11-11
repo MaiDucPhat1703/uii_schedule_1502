@@ -104,6 +104,10 @@ function axis(){const node=document.createElement('div');node.className='time-ax
 function showBusyDetails(seat, interval){
  $('busyDetailSeat').textContent=seat.code+(seat.capacity===6?' · Cả 6 chỗ':'');
  $('busyDetailTime').textContent=formatDay($('day').value)+' · '+time(interval.startMinute)+'–'+time(interval.endMinute);
+ const booker=interval.booker;
+ $('busyBookerName').textContent=booker?.name||'—';
+ $('busyBookerEmail').textContent=booker?.email||'—';
+ $('busyBookerPhone').textContent=booker?.phone||'—';
  $('busyDetail').showModal();
 }
 $('closeBusyDetail').onclick=()=>$('busyDetail').close();

@@ -7,12 +7,29 @@ export const dynamic='force-dynamic';
 const response=(b:unknown,s=200,cookie:string|null=null)=>Response.json(b,{status:s,headers:{'Cache-Control':'no-store',...(cookie?{'Set-Cookie':cookie}:{})}});
 const conflictMessage='Có ít nhất một ngày trong chuỗi bị trùng lịch. Chưa lưu lượt nào; hãy đổi ngày hoặc khung giờ.';
 
+function maskEmail(email:string|null){
+ const [local,domain]=String(email||'').trim().split('@');
+ return local&&domain?local[0]+'•••@'+domain:'';
+}
+function maskPhone(phone:string|null){
+ const digits=String(phone||'').replace(/\D/g,'');
+ return digits.length>4?'••••••'+digits.slice(-4):'';
+}
+
 export async function GET(r:Request){
  const u=await visitor(r),day=new URL(r.url).searchParams.get('day');
  if(!dayValid(day))return response({error:'Ngày không hợp lệ.'},400,u.cookie);
- const rows=await env.DB!.prepare("SELECT seat_id,seat_ids,resource_type,COALESCE(start_minute,start_slot*30) startMinute,COALESCE(end_minute,end_slot*30) endMinute,user_id,status FROM seat_bookings WHERE day=? AND resource_type='seat' AND status='active'").bind(day).all();
+ const rows=await env.DB!.prepare("SELECT seat_id,seat_ids,resource_type,COALESCE(start_minute,start_slot*30) startMinute,COALESCE(end_minute,end_slot*30) endMinute,user_id,status,display_name,email,phone FROM seat_bookings WHERE day=? AND resource_type='seat' AND status='active'").bind(day).all();
  const mine=await env.DB!.prepare("SELECT id,status FROM seat_bookings WHERE user_id=? AND day=? AND resource_type='seat' ORDER BY created_at").bind(u.userId,day).all();
- return response({reservations:rows.results.flatMap((b:any)=>(b.seat_ids?JSON.parse(b.seat_ids):[b.seat_id]).map((seatId:string)=>({seatId,resourceType:b.resource_type,startMinute:b.startMinute,endMinute:b.endMinute,mine:b.user_id===u.userId,status:b.status}))),mine:mine.results},200,u.cookie);
+ const reservations=rows.results.flatMap((row:any)=>{
+  const seatIds=row.seat_ids?JSON.parse(row.seat_ids):[row.seat_id];
+  const booker={name:row.display_name||'',email:maskEmail(row.email),phone:maskPhone(row.phone)};
+  return seatIds.map((seatId:string)=>({
+   seatId,resourceType:row.resource_type,startMinute:row.startMinute,endMinute:row.endMinute,
+   mine:row.user_id===u.userId,status:row.status,booker
+  }));
+ });
+ return response({reservations,mine:mine.results},200,u.cookie);
 }
 
 export async function POST(r:Request){

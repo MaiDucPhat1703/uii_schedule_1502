@@ -249,12 +249,33 @@ function policyError(p, day, start, end, type) {
 var dynamic = "force-dynamic";
 var response = (b, s = 200, cookie = null) => Response.json(b, { status: s, headers: { "Cache-Control": "no-store", ...cookie ? { "Set-Cookie": cookie } : {} } });
 var conflictMessage = "C\xF3 \xEDt nh\u1EA5t m\u1ED9t ng\xE0y trong chu\u1ED7i b\u1ECB tr\xF9ng l\u1ECBch. Ch\u01B0a l\u01B0u l\u01B0\u1EE3t n\xE0o; h\xE3y \u0111\u1ED5i ng\xE0y ho\u1EB7c khung gi\u1EDD.";
+function maskEmail(email) {
+  const [local, domain] = String(email || "").trim().split("@");
+  return local && domain ? local[0] + "\u2022\u2022\u2022@" + domain : "";
+}
+function maskPhone(phone) {
+  const digits = String(phone || "").replace(/\D/g, "");
+  return digits.length > 4 ? "\u2022\u2022\u2022\u2022\u2022\u2022" + digits.slice(-4) : "";
+}
 async function GET2(r) {
   const u = await visitor(r), day = new URL(r.url).searchParams.get("day");
   if (!dayValid(day)) return response({ error: "Ng\xE0y kh\xF4ng h\u1EE3p l\u1EC7." }, 400, u.cookie);
-  const rows = await env.DB.prepare("SELECT seat_id,seat_ids,resource_type,COALESCE(start_minute,start_slot*30) startMinute,COALESCE(end_minute,end_slot*30) endMinute,user_id,status FROM seat_bookings WHERE day=? AND resource_type='seat' AND status='active'").bind(day).all();
+  const rows = await env.DB.prepare("SELECT seat_id,seat_ids,resource_type,COALESCE(start_minute,start_slot*30) startMinute,COALESCE(end_minute,end_slot*30) endMinute,user_id,status,display_name,email,phone FROM seat_bookings WHERE day=? AND resource_type='seat' AND status='active'").bind(day).all();
   const mine = await env.DB.prepare("SELECT id,status FROM seat_bookings WHERE user_id=? AND day=? AND resource_type='seat' ORDER BY created_at").bind(u.userId, day).all();
-  return response({ reservations: rows.results.flatMap((b) => (b.seat_ids ? JSON.parse(b.seat_ids) : [b.seat_id]).map((seatId) => ({ seatId, resourceType: b.resource_type, startMinute: b.startMinute, endMinute: b.endMinute, mine: b.user_id === u.userId, status: b.status }))), mine: mine.results }, 200, u.cookie);
+  const reservations = rows.results.flatMap((row) => {
+    const seatIds = row.seat_ids ? JSON.parse(row.seat_ids) : [row.seat_id];
+    const booker = { name: row.display_name || "", email: maskEmail(row.email), phone: maskPhone(row.phone) };
+    return seatIds.map((seatId) => ({
+      seatId,
+      resourceType: row.resource_type,
+      startMinute: row.startMinute,
+      endMinute: row.endMinute,
+      mine: row.user_id === u.userId,
+      status: row.status,
+      booker
+    }));
+  });
+  return response({ reservations, mine: mine.results }, 200, u.cookie);
 }
 async function POST2(r) {
   const u = await visitor(r), json7 = (b2, s = 200) => response(b2, s, u.cookie);
