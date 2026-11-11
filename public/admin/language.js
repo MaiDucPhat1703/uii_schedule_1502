@@ -1,0 +1,245 @@
+const english = {
+ "Quản lý đặt chỗ · Phòng 15.02 · UII": "Booking management · Room 15.02 · UII",
+ "Đóng menu": "Close menu",
+ "Điều hướng quản lý": "Admin navigation",
+ "Đóng menu điều hướng": "Close navigation menu",
+ "QUẢN LÝ PHÒNG 15.02": "ROOM 15.02 ADMIN",
+ "Tùy chọn tài khoản admin": "Admin account options",
+ "Tài khoản": "Account",
+ "Đổi mật khẩu": "Change password",
+ "Đăng xuất": "Sign out",
+ "Danh sách đặt chỗ": "Bookings",
+ "Chỉnh sơ đồ": "Edit layout",
+ "Cấu hình đặt chỗ": "Booking settings",
+ "Trang đặt chỗ của khách ↗": "Guest booking page ↗",
+ "Tải bản sao dữ liệu": "Download data backup",
+ "Thu gọn hoặc mở menu": "Toggle navigation",
+ "Không gian làm việc UII": "UII workspace",
+ "Phòng 15.02": "Room 15.02",
+ "QUẢN LÝ / PHÒNG 15.02": "ADMIN / ROOM 15.02",
+ "Chọn một lượt đặt để xem đầy đủ thông tin, vị trí và xử lý yêu cầu.": "Select a booking to review its details, seat locations and available actions.",
+ "↻ Cập nhật": "↻ Refresh",
+ "Trạng thái": "Status",
+ "Tất cả": "All",
+ "Chờ duyệt": "Pending",
+ "Đã duyệt": "Approved",
+ "Từ chối": "Rejected",
+ "Từ ngày": "From date",
+ "Đến ngày (không bắt buộc)": "To date (optional)",
+ "Tìm tên khách / nhóm / ghế": "Search by guest, group or seat",
+ "Tìm yêu cầu": "Search bookings",
+ "Danh sách yêu cầu": "Booking list",
+ "Các lượt đặt": "Bookings",
+ "Bảng đặt chỗ, có thể cuộn ngang trên màn hình nhỏ": "Booking table, scrolls horizontally on small screens",
+ "Phân trang yêu cầu": "Booking pages",
+ "← Trang trước": "← Previous",
+ "Trang sau →": "Next →",
+ "Tự cập nhật mỗi 15 giây. Giờ Việt Nam (UTC+7). Lượt chờ duyệt chưa giữ chỗ.": "Refreshes every 15 seconds. Vietnam time (UTC+7). Pending requests do not hold seats.",
+ "Chỉnh sơ đồ ngay trong quản lý": "Layout editor in admin",
+ "Trình chỉnh sơ đồ Phòng 15.02": "Room 15.02 layout editor",
+ "Cấu hình nhận đặt chỗ": "Booking settings",
+ "CẤU HÌNH NHẬN ĐĂNG KÝ": "BOOKING SETTINGS",
+ "Mở / đóng đặt ghế & giờ hoạt động": "Seat bookings and opening hours",
+ "Mở nhận đặt ghế": "Accept seat bookings",
+ "Giờ mở cửa": "Opening time",
+ "Giờ đóng cửa": "Closing time",
+ "22:00 hoặc 24:00": "22:00 or 24:00",
+ "Tối thiểu / lượt (phút)": "Minimum booking length (minutes)",
+ "Tối đa đặt ghế (phút)": "Maximum booking length (minutes)",
+ "Bước chọn giờ": "Time interval",
+ "15 phút": "15 minutes",
+ "30 phút": "30 minutes",
+ "60 phút": "60 minutes",
+ "Đặt trước tối đa (ngày)": "Maximum advance booking (days)",
+ "Giãn cách giữa lượt (phút)": "Buffer between bookings (minutes)",
+ "Không giới hạn ngày đặt trước và thời lượng tối đa": "Unlimited advance booking and booking length",
+ "Vẫn áp dụng giờ mở/đóng, ngày hoạt động và thời lượng tối thiểu.": "Opening hours, operating days and the minimum booking length still apply.",
+ "Ngày hoạt động": "Operating days",
+ "Thông báo / quy định cho khách": "Guest notice / rules",
+ "Lưu cấu hình booking": "Save booking settings",
+ "Đóng nhận đặt ghế chỉ chặn lượt đặt mới; bản bố trí 3D và các lượt đã đăng ký vẫn được giữ. Lưu bản bố trí trong trình chỉnh sửa độc lập với việc mở nhận booking.": "Closing seat bookings blocks new requests. Save the 3D layout separately in the layout editor.",
+ "Chi tiết lượt đặt": "Booking details",
+ "Đóng chi tiết": "Close details",
+ "Chọn một yêu cầu để xem vị trí.": "Select a booking to see its seat locations.",
+ "Xem toàn không gian": "Show full layout",
+ "Màu cam: chỗ thuộc yêu cầu đang xem · Theo bố trí đang áp dụng": "Orange highlights the seats in this booking on the published layout.",
+ "Thông tin đầy đủ & danh sách ghế": "Full details and seat list",
+ "Đổi mật khẩu admin": "Change admin password",
+ "Mật khẩu hiện tại": "Current password",
+ "Mật khẩu mới (tối thiểu 12 ký tự)": "New password (at least 12 characters)",
+ "Nhập lại mật khẩu mới": "Confirm new password",
+ "Lưu mật khẩu mới": "Save new password",
+ "Chi tiết đăng ký": "Booking details",
+ "Xử lý đăng ký": "Review booking",
+ "Trạng thái mới": "New status",
+ "Xóa vĩnh viễn lượt đặt này và giải phóng chỗ đang giữ. Không thể hoàn tác.": "Permanently delete this booking and release its seats. This action cannot be undone.",
+ "Ghi chú / lý do xử lý": "Notes / reason",
+ "Xác nhận": "Confirm",
+ "Sửa yêu cầu": "Edit booking",
+ "Ngày sử dụng": "Booking date",
+ "Từ giờ": "Start time",
+ "Đến giờ": "End time",
+ "Họ tên": "Full name",
+ "Đơn vị / dự án": "Organization / project",
+ "Nhóm đăng ký": "Booking group",
+ "Thầy / Cô": "Faculty",
+ "Cán bộ / Nhân sự": "Staff",
+ "Khác": "Other",
+ "Điện thoại": "Phone",
+ "Người phụ trách": "Person in charge",
+ "Tiêu đề": "Title",
+ "Mô tả": "Description",
+ "Ghi chú quản lý": "Admin note",
+ "Chỗ ngồi": "Seats",
+ "Chọn ghế hoặc chọn riêng Bàn 7 nguyên 6 chỗ.": "Select individual seats or book all six seats at Table 7 together.",
+ "Lưu thay đổi": "Save changes",
+ "Vui lòng đăng nhập admin.": "Please sign in as an administrator.",
+ "Không kết nối được hệ thống": "Could not connect to the system",
+ "Không có lượt đặt phù hợp. Thử đổi ngày hoặc trạng thái.": "No matching bookings. Try changing the date or status.",
+ "Danh sách đặt chỗ Phòng 15.02": "Room 15.02 bookings",
+ "Khung giờ": "Time",
+ "Người đăng ký / Đơn vị": "Booker / organization",
+ "Chỗ đăng ký": "Booked seats",
+ "Thao tác": "Actions",
+ "Cập nhật trạng thái lượt đặt của {name}": "Update the booking status for {name}",
+ "Đã cập nhật trạng thái.": "Status updated.",
+ "Xem chi tiết": "View details",
+ "Xem chi tiết lượt đặt của {name} ngày {date}": "View {name}'s booking on {date}",
+ "Xóa": "Delete",
+ "{action} lượt đặt của {name}": "{action} booking for {name}",
+ "Người đăng ký": "Booker",
+ "Đơn vị": "Organization",
+ "Liên hệ": "Contact",
+ "Số chỗ": "Number of seats",
+ "Mã yêu cầu": "Request ID",
+ "{count} chỗ": "{count} seats",
+ "Có {count} vị trí không còn trên bố trí hiện tại. Kiểm tra danh sách ghế trước khi xử lý.": "{count} seat locations are missing from the current layout. Check the seat list before proceeding.",
+ "Xem khu vực đặt": "Show booked area",
+ "Sửa thông tin / thời gian": "Edit details / time",
+ "Duyệt yêu cầu": "Approve request",
+ "Xóa lượt đặt": "Delete booking",
+ "Điều chỉnh giờ hoạt động và quy định nhận đăng ký.": "Manage opening hours and booking rules.",
+ "Chỉnh trực tiếp tại đây. Lưu để cập nhật bố trí cho trang đặt chỗ.": "Edit the layout here. Save to publish it to the booking page.",
+ "Trang {page}": "Page {page}",
+ "Trang {page} / {pages}": "Page {page} of {pages}",
+ "{count} lượt": "{count} bookings",
+ "Từ ngày phải trước hoặc bằng Đến ngày.": "The start date must be on or before the end date.",
+ "Cập nhật {time}": "Updated {time}",
+ "Hai mật khẩu mới chưa trùng nhau.": "The new passwords do not match.",
+ "Loại": "Type",
+ "Đăng ký phòng": "Room booking",
+ "Đặt ghế": "Seat booking",
+ "Phòng / ghế": "Room / seats",
+ "Cơ sở": "Campus",
+ "Ngày / giờ": "Date / time",
+ "Nhóm": "Group",
+ "Người chủ trì": "Host",
+ "Số người": "Attendees",
+ "Mã đăng ký": "Booking ID",
+ "Xóa vĩnh viễn": "Delete permanently",
+ "Duyệt đăng ký": "Approve booking",
+ "Từ chối đăng ký": "Reject booking",
+ "Cập nhật trạng thái": "Update status",
+ "Có vị trí không còn trên sơ đồ hiện tại. Kiểm tra trước khi xác nhận.": "Some seats are missing from the current layout. Check before confirming.",
+ "Màu cam là các chỗ thuộc lượt đặt đang xử lý.": "Orange highlights the seats in this booking.",
+ "Đã xử lý đăng ký.": "Booking updated.",
+ "Chủ nhật": "Sunday",
+ "Thứ hai": "Monday",
+ "Thứ ba": "Tuesday",
+ "Thứ tư": "Wednesday",
+ "Thứ năm": "Thursday",
+ "Thứ sáu": "Friday",
+ "Thứ bảy": "Saturday",
+ "Đã lưu cấu hình. Đặt ghế đang mở.": "Settings saved. Seat bookings are open.",
+ "Đã lưu cấu hình. Đặt ghế đã đóng.": "Settings saved. Seat bookings are closed.",
+ "Các chỗ đang chỉnh": "Seats being edited",
+ "Đã lưu thay đổi.": "Changes saved.",
+ "Chưa có sơ đồ đang áp dụng.": "No layout has been published.",
+ "Đăng ký phòng cũ không có vị trí ghế trên sơ đồ.": "Legacy room bookings have no seat locations.",
+ "Không có sơ đồ": "No layout",
+ "Không tìm thấy vị trí trên sơ đồ hiện tại.": "Seat locations were not found on the current layout.",
+ "Không tìm thấy vị trí": "Seat locations not found",
+ "Vị trí {seats}": "Location of {seats}",
+ "Bàn {number}": "Table {number}",
+ "Ghế {number}": "Seat {number}",
+ "Nguyên bàn · 6 chỗ": "Entire table · 6 seats",
+ "Cả 6 ghế": "All 6 seats",
+ "Thuộc yêu cầu này": "Part of this booking",
+ "Khu 2 · Bàn 7 bên trong": "Area 2 · Inner Table 7",
+ "Khu 1 · Bàn 1–6": "Area 1 · Tables 1–6",
+ "Chọn giờ bắt đầu": "Choose start time",
+ "Chọn giờ kết thúc": "Choose end time",
+ "Giờ": "Hour",
+ "Phút": "Minute",
+ "Chọn giờ": "Choose time",
+ "Bộ lọc không hợp lệ.": "Invalid filters.",
+ "Yêu cầu không hợp lệ.": "Invalid request.",
+ "Dữ liệu không hợp lệ.": "Invalid data.",
+ "Thao tác không hợp lệ.": "Invalid action.",
+ "Không tìm thấy yêu cầu.": "Booking not found.",
+ "Tải lại lượt đặt trước khi xóa.": "Refresh the booking before deleting it.",
+ "Lượt đặt đã được duyệt.": "This booking is already approved.",
+ "Ngày không hợp lệ.": "Invalid date.",
+ "Điền đầy đủ họ tên, đơn vị, email, điện thoại, người phụ trách và tiêu đề.": "Enter the name, organization, email, phone, person in charge and title.",
+ "Chưa đổi được mật khẩu.": "Could not change the password.",
+ "Mật khẩu hiện tại không đúng.": "The current password is incorrect.",
+ "Mật khẩu mới cần từ 12 đến 200 ký tự.": "The new password must be 12 to 200 characters long.",
+ "Chọn ghế đang mở; Bàn 7 phải đăng ký riêng nguyên cụm.": "Choose seats that are open for booking. Table 7 must be booked as a group.",
+ "Chọn từ 1 đến 36 chỗ khác nhau.": "Choose 1 to 36 different seats.",
+ "Có lịch đã duyệt trùng giờ hoặc dữ liệu vừa thay đổi. Chưa lưu thay đổi; hãy tải lại.": "An approved booking overlaps or the data has changed. Refresh and try again.",
+ "Lượt đặt đã ở trạng thái này. Hãy cập nhật danh sách.": "This booking already has that status. Refresh the list.",
+ "Thông tin liên hệ, nhóm hoặc ghi chú không hợp lệ.": "Invalid contact information, group or note.",
+ "Yêu cầu đã được thay đổi. Đóng biểu mẫu và tải lại trước khi xử lý.": "The booking has changed. Close the form and refresh before continuing.",
+ "Cấu hình đã thay đổi ở nơi khác. Hãy tải lại.": "The settings changed elsewhere. Refresh and try again.",
+ "Kiểm tra lại giờ mở/đóng, thời lượng và bước thời gian.": "Check the opening hours, booking length and time interval.",
+ "6 chỗ": "6 seats"
+};
+
+const storageKey = 'uii-admin-language';
+let language = 'vi';
+try {
+ if(localStorage.getItem(storageKey)==='en')language='en';
+}catch{}
+
+export const adminLanguage=()=>language;
+export function t(key, values={}){
+ const message=language==='en'&&Object.hasOwn(english,key)?english[key]:key;
+ return String(message??'').replace(/\{(\w+)\}/g,(token,name)=>values[name]??token);
+}
+
+const copy=[];
+export function captureAdminCopy(root){
+ const walker=document.createTreeWalker(root,NodeFilter.SHOW_TEXT);
+ while(walker.nextNode()){
+  const node=walker.currentNode,source=node.nodeValue,key=source.trim();
+  if(!Object.hasOwn(english,key))continue;
+  copy.push(()=>{node.nodeValue=source.replace(key,()=>t(key))});
+ }
+ for(const node of root.querySelectorAll('[aria-label],[title],[placeholder]')){
+  for(const attr of ['aria-label','title','placeholder']){
+   const key=node.getAttribute(attr);
+   if(Object.hasOwn(english,key))copy.push(()=>node.setAttribute(attr,t(key)));
+  }
+ }
+}
+export function applyAdminLanguage(){
+ document.documentElement.lang=language;
+ for(const update of copy)update();
+}
+export function toggleAdminLanguage(){
+ language=language==='vi'?'en':'vi';
+ try{localStorage.setItem(storageKey,language)}catch{}
+ applyAdminLanguage();
+}
+
+// Translate generated table/seat labels, preserving custom names and booking text.
+export function adminSeatLabel(label){
+ if(language==='vi')return label;
+ return String(label??'').split('\n').map(line=>{
+  const match=/^Bàn (\d+)(?: · (.*))?$/.exec(line);
+  if(!match)return line;
+  const [,number,detail]=match;
+  const seat=/^Ghế (\d+(?:, \d+)*)$/.exec(detail||'');
+  return t('Bàn {number}',{number})+(detail?' · '+(seat?t('Ghế {number}',{number:seat[1]}):t(detail)):'');
+ }).join('\n');
+}
