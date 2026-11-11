@@ -95,8 +95,9 @@ function renderDayOverview(){
  for(const [id,capacity] of [['workingDaySummary',1],['meetingDaySummary',6]]){const count=dailySummary(seats.filter(s=>s.capacity===capacity),reservations);$(id).textContent=!valid?t('Đang tải lịch…'):t('{scheduled} / {total} chỗ có lịch trong ngày',count)}
  $('dayView').setAttribute('aria-pressed',String(mapScope==='day'));$('rangeView').setAttribute('aria-pressed',String(mapScope==='range'));
  $('legendFree').textContent=mapScope==='day'?t('Trống cả ngày'):t('Trống giờ muốn đặt');$('legendOccupied').textContent=mapScope==='day'?t('Có lịch trong ngày'):t('Bận giờ muốn đặt');$('occupiedLegend').className=mapScope==='day'?'scheduled':'busy';
- $('mapModeHint').textContent=mapScope==='day'?t('Màu vàng: có lịch ở một hoặc nhiều khoảng trong ngày. Bấm ghế để xem giờ; vẫn đặt được vào khoảng còn trống.'):t('Sơ đồ đang kiểm tra {start}–{end}. Bấm ghế để xem lịch cả ngày.',{start:time(start()),end:time(end())});
- $('timeScopeHint').textContent=t('Khung giờ này dùng để kiểm tra và đặt chỗ; không lọc mất lịch cả ngày.');
+ const rangeHint=$('mapModeHint');
+ rangeHint.hidden=mapScope==='day';
+ rangeHint.textContent=rangeHint.hidden?'':t('Sơ đồ đang kiểm tra {start}–{end}. Bấm ghế để xem lịch cả ngày.',{start:time(start()),end:time(end())});
  return dailySummary(areaResources(),reservations);
 }
 function render(){

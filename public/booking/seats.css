@@ -33,7 +33,6 @@ body{font-size:14px}label{font-size:12px}.intro p,.section-top p,.seat-detail p{
 .booking-map .furniture[role="button"]{pointer-events:auto;cursor:pointer}
 
 /* Whole-day overview and the independent booking interval. */
-.intro .intro-help{max-width:none;margin:0 0 18px;font-size:14px;color:#617466}
 .day-picker{display:flex;align-items:center;gap:24px;padding:20px 24px;background:#fff;border:1px solid var(--line);border-radius:12px;margin-bottom:14px}
 .day-picker>label{min-width:195px;font-size:13px}.day-picker input{font-size:17px;min-height:46px}.day-intro{flex:1}.day-intro strong{font-size:17px}.day-intro p{font-size:13px;line-height:1.7;margin:6px 0 0;max-width:650px;color:#617466}.day-totals{max-width:230px;background:#f1f6ed;border:1px solid #dce8d2;padding:12px 15px;border-radius:8px;font-size:14px;line-height:1.7;color:#34573c}
 .booking-time-intro{min-width:155px}.booking-time-intro strong{display:block;font-size:15px}.booking-time-intro span{display:block;max-width:255px;font-size:12px;line-height:1.6;color:#617466;margin-top:5px}.time-picker{margin-bottom:16px;flex-wrap:wrap}.range-text strong{font-size:17px}.area-cards small{display:block;font-size:13px;line-height:1.6;margin-top:10px;color:#496342}
