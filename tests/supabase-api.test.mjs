@@ -35,6 +35,18 @@ await test('Supabase: server-side permissions, private schema, guest booking, at
  await ok('/api/admin/bookings',{action:'cancel',id:row.id},{admin:true});assert.equal((await ok('/api/bookings?day='+day,undefined,{visitor})).body.reservations.length,0);
  assert.equal((await call('/api/bookings',{...body,requestId:'past',day:'2020-01-06'},{visitor})).status,400,'past dates are rejected even with unlimited advance booking');
  const {MEETING_TABLE}=await import('../public/booking/resources.js');const members=Array.from({length:6},(_,i)=>({id:'group-'+i,source:'chair-'+(45+i),bookable:true,position:[20+Math.cos(i*Math.PI/3),0,20+Math.sin(i*Math.PI/3)],rotation:[0,0,0],scale:[1,1,1]}));const grouped={version:1,objects:[...data.objects,{id:MEETING_TABLE,source:'hex-3',position:[20,0,20],rotation:[0,0,0],scale:[1,1,1]},...members]};await ok('/api/space',{name:'UII cluster',data:grouped,revision:2},{admin:true});assert.equal((await call('/api/bookings',{...body,requestId:'single-group',seatIds:[members[0].id],attendees:1},{visitor})).status,409);await ok('/api/bookings',{...body,requestId:'cluster',seatIds:[MEETING_TABLE],attendees:6},{visitor});await ok('/api/admin/bookings',{action:'approve',id:'cluster'},{admin:true});assert.equal((await call('/api/bookings',{...body,requestId:'cluster-overlap',seatIds:[MEETING_TABLE],attendees:6},{visitor:guest2})).status,409);
+ const optional={...body,requestId:'optional-contact',startMinute:750,endMinute:810};
+ delete optional.email;delete optional.phone;
+ assert.equal((await call('/api/bookings',{...optional,email:42},{visitor})).status,400);
+ await ok('/api/bookings',optional,{visitor});
+ const optionalRow=(await db.query('SELECT email,phone FROM uii.seat_bookings WHERE id=$1',[optional.requestId])).rows[0];
+ assert.deepEqual(optionalRow,{email:'',phone:''});
+ const contactEdit={...edit,expectedToken:undefined,id:optional.requestId,seatIds:optional.seatIds,startMinute:750,endMinute:810,email:'tên liên hệ',phone:'123'};
+ await ok('/api/admin/bookings',contactEdit,{admin:true});
+ assert.deepEqual((await db.query('SELECT email,phone FROM uii.seat_bookings WHERE id=$1',[optional.requestId])).rows[0],{email:'tên liên hệ',phone:'123'});
+ await ok('/api/admin/bookings',{...contactEdit,email:'',phone:''},{admin:true});
+ assert.deepEqual((await db.query('SELECT email,phone FROM uii.seat_bookings WHERE id=$1',[optional.requestId])).rows[0],{email:'',phone:''});
+ await ok('/api/bookings',{...optional,requestId:'freeform-contact',startMinute:825,endMinute:885,email:'tên liên hệ',phone:'123'},{visitor});
  await db.exec('SET ROLE anon');await assert.rejects(db.query('SELECT * FROM uii.seat_bookings'),/permission denied/);await db.exec('RESET ROLE');
 });
 await test('Regression: malformed inputs, impossible policy, pagination and full-history search',async()=>{

@@ -41,8 +41,9 @@ export async function POST(r:Request){
  const type=b.resourceType||'seat';
  if(type!=='seat')return json({error:'Hệ thống hiện chỉ nhận đặt chỗ ngồi theo khung giờ.'},400);
  if(typeof b.attendees!=='number'||!Number.isInteger(b.attendees)||b.attendees<1||b.attendees>1000||!['startup','faculty','staff','other'].includes(b.groupType))return json({error:'Chọn nhóm đối tượng và số người hợp lệ.'},400);
- for(const [key,max] of [['displayName',255],['organization',255],['email',255],['phone',20],['leader',255],['subject',255]] as const)if(typeof b[key]!=='string'||!b[key].trim()||b[key].length>max)return json({error:'Vui lòng điền đủ họ tên, đơn vị, email, điện thoại, người chủ trì và tiêu đề.'},400);
- if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(b.email)||!/^\+?[\d\s().-]{8,20}$/.test(b.phone)||typeof b.description!=='string'||b.description.length>2000)return json({error:'Email, số điện thoại hoặc mô tả không hợp lệ.'},400);
+ for(const [key,max] of [['displayName',255],['organization',255],['leader',255],['subject',255]] as const)if(typeof b[key]!=='string'||!b[key].trim()||b[key].length>max)return json({error:'Vui lòng điền đủ họ tên, đơn vị, người chủ trì và tiêu đề.'},400);
+ const email=b.email===undefined?'':b.email,phone=b.phone===undefined?'':b.phone;
+ if(typeof email!=='string'||email.length>255||typeof phone!=='string'||phone.length>20||typeof b.description!=='string'||b.description.length>2000)return json({error:'Email, số điện thoại hoặc mô tả không hợp lệ.'},400);
 
  if(b.occurrences!==undefined&&!Array.isArray(b.occurrences))return json({error:'Danh sách ngày lặp không hợp lệ.'},400);
  const occurrences=Array.isArray(b.occurrences)?b.occurrences:[{requestId:b.requestId,day:b.day,startMinute:b.startMinute,endMinute:b.endMinute}];
@@ -99,7 +100,7 @@ export async function POST(r:Request){
 
  const statements=pending.map(occurrence=>{
   const columns='id,user_id,seat_id,seat_label,day,start_slot,end_slot,display_name,organization,status,created_at,email,phone,leader,subject,description,group_type,attendees,resource_type,campus,start_minute,end_minute,seat_ids';
-  const values=[occurrence.requestId,u.userId,b.seatId,name,occurrence.day,occurrence.startMinute/30,occurrence.endMinute/30,b.displayName.trim(),b.organization.trim(),'pending',new Date().toISOString(),b.email.trim(),b.phone.trim(),b.leader.trim(),b.subject.trim(),b.description.trim(),b.groupType,b.attendees,type,'Cơ sở B · 279 Nguyễn Tri Phương · Tầng 15',occurrence.startMinute,occurrence.endMinute,JSON.stringify(seatIds)];
+  const values=[occurrence.requestId,u.userId,b.seatId,name,occurrence.day,occurrence.startMinute/30,occurrence.endMinute/30,b.displayName.trim(),b.organization.trim(),'pending',new Date().toISOString(),email.trim(),phone.trim(),b.leader.trim(),b.subject.trim(),b.description.trim(),b.groupType,b.attendees,type,'Cơ sở B · 279 Nguyễn Tri Phương · Tầng 15',occurrence.startMinute,occurrence.endMinute,JSON.stringify(seatIds)];
   const placeholders=conflictIds.map(()=>'?').join(',');
   const query=`INSERT INTO seat_bookings (${columns}) SELECT ${values.map(()=>'?').join(',')} WHERE EXISTS (SELECT 1 FROM booking_settings WHERE id='main' AND revision=?) AND EXISTS (SELECT 1 FROM spatial_spaces WHERE id='main' AND revision=?) AND NOT EXISTS (SELECT 1 FROM seat_bookings WHERE EXISTS (SELECT 1 FROM json_each(COALESCE(seat_ids,json_array(seat_id))) held WHERE held.value IN (${placeholders})) AND day=? AND status='active' AND COALESCE(start_minute,start_slot*30) < ? AND COALESCE(end_minute,end_slot*30) > ?)`;
   return env.DB!.prepare(query).bind(...values,config.revision,resourceRevision,...conflictIds,occurrence.day,occurrence.endMinute+buffer,occurrence.startMinute-buffer);
