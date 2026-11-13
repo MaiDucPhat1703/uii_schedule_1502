@@ -16,7 +16,14 @@
  const request=new Request(input instanceof Request?input:url,options);
  const headers=new Headers(request.headers);headers.set('apikey',config.key);if(s)headers.set('Authorization','Bearer '+s.access_token);const visitor=read(localStorage,visitorKey);if(visitor)headers.set('x-visitor-token',visitor);
  const endpoint=new URL(config.url+'/functions/v1/uii-api');endpoint.search=url.search;endpoint.searchParams.set('route',path);
- const r=await originalFetch(new Request(endpoint,request),{headers,credentials:'omit'});
+ const r = await originalFetch(endpoint, {
+  method: request.method,
+  headers,
+  credentials: 'omit',
+  signal: request.signal,
+  redirect: request.redirect,
+  body: request.body === null ? undefined : await request.arrayBuffer(),
+});
  const issued=r.headers.get('x-visitor-token');if(issued)write(localStorage,visitorKey,issued);
  if(path==='/api/admin/auth'&&request.method==='POST'){const body=await r.clone().json();if(body.session){session=body.session;write(sessionStorage,key,JSON.stringify(session))}if(body.clearSession){session=null;write(sessionStorage,key,null)}}
  return r;
