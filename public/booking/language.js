@@ -74,7 +74,6 @@ const english = {
  "Điện thoại *": "Phone number *",
  "Tiêu đề *": "Title *",
  "Mô tả thêm": "Additional description",
- "Lịch đã duyệt hiển thị công khai tên người đặt, email, số điện thoại và tiêu đề.": "Approved bookings publicly display the booker's name, email, phone number and title.",
  "Quay lại chọn ghế": "Back to seat selection",
  "Đặt chỗ": "Book seats",
  "Chưa kết nối được hệ thống. Vui lòng thử lại.": "Could not connect. Please try again.",
