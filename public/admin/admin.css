@@ -45,7 +45,8 @@ body{font-size:14px;background:var(--bg)}
 #editMap>div{min-width:0;background:#f5f7f2;border:1px solid var(--line);border-radius:8px;display:grid;align-items:center}
 #editMap>div:only-child{grid-column:1/-1}
 #editMap [data-resource-id]{cursor:pointer}
-#editMap [role=button]:focus-visible{outline:none}
+#editMap .edit-meeting-map [data-resource-id]{cursor:default}
+#editMap [role=button]{outline:none;-webkit-tap-highlight-color:transparent}
 #editMap [role=button]:focus-visible :is(rect,polygon){stroke:#1d5a48;stroke-width:.065}
 #editMap .requested>.admin-table{fill:#f8dfb7;stroke:#9f5b12}
 @media(max-width:650px){#editMap{grid-template-columns:minmax(0,1fr)}#editMap>div+div .admin-floor-map{max-height:190px}}

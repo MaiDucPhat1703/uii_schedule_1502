@@ -121,6 +121,7 @@ function renderEditSeats(){
  for(const [area,label,capacity] of [['working','Khu 1 · Bàn 1–6',1],['meeting','Khu 2 · Bàn 7 bên trong',6]]){
   if((resources.length||area==='meeting')&&!resources.some(seat=>seat.capacity===capacity))continue;
   const panel=document.createElement('div');
+  if(area==='meeting')panel.className='edit-meeting-map';
   drawBookingMap(panel,space,{...preview,seat_label:t(label)},false,{area,onPick:pick});
   maps.append(panel);
  }

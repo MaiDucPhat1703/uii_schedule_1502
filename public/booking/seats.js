@@ -69,7 +69,7 @@ function drawDetailMap(){
  map.setAttribute('viewBox',[minX,minZ,maxX-minX,maxZ-minZ].join(' '));map.style.aspectRatio=(maxX-minX)/(maxZ-minZ);
  for(const o of objects.filter(o=>o.meta.kind==='hex'&&(group?o.id===MEETING_TABLE:o.id!==MEETING_TABLE))){
  const points=hexOutline().map(([x,z])=>transform(o,x,z));
- const polygon=svg('polygon',{points:points.map(p=>p.x+','+p.z).join(' '),class:'furniture'+(o.id===activeTable?' highlighted-table':''),...(group?{role:'button',tabindex:'0','aria-label':t('Chọn Bàn 7 · nguyên cụm 6 chỗ')}:{})});if(group){const meetingSeat=resources.find(r=>r.capacity===6);if(meetingSeat){polygon.style.cursor='pointer';polygon.onclick=()=>choose(meetingSeat);polygon.onkeydown=e=>{if(['Enter',' '].includes(e.key)){e.preventDefault();choose(meetingSeat)}}}}map.append(polygon);
+ const polygon=svg('polygon',{points:points.map(p=>p.x+','+p.z).join(' '),class:'furniture'+(o.id===activeTable?' highlighted-table':''),...(group?{role:'button',tabindex:'0','aria-label':t('Chọn Bàn 7 · nguyên cụm 6 chỗ')}:{})});if(group){const meetingSeat=resources.find(r=>r.capacity===6);if(meetingSeat){polygon.onclick=()=>choose(meetingSeat);polygon.onkeydown=e=>{if(['Enter',' '].includes(e.key)){e.preventDefault();choose(meetingSeat)}}}}map.append(polygon);
  if(!group)polygon.append(svg('title',{},seatLabel(o.label?.replace('Bàn lục giác','Bàn')||'Bàn '+Number((o.source||o.id).slice(4)))));
  const center=transform(o,0,0);map.append(svg('text',{x:center.x,y:center.z,class:'furniture-label'},t('Bàn {number}',{number:o.id===MEETING_TABLE?7:Number((o.source||o.id).slice(4))})));
 
