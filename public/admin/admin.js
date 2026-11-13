@@ -3,6 +3,7 @@ import {formatDay,formatDateText} from '/booking/date-format.js';
 import {placeSummary} from '/booking/place-summary.js';
 import {mountClockPicker,timeChoices} from '/booking/clock-picker.js';
 import {bookingResources} from '/booking/resources.js';
+import {normalizeBookingLayout} from '/booking/layout-normalization.js';
 import {drawBookingMap} from './booking-map.js?v=18';
 const PAGE_SIZE=6;
 const $=id=>document.getElementById(id),names={pending:'Chờ duyệt',active:'Đã duyệt',rejected:'Từ chối'};let loadSequence=0,offset=0,searchTimer,lastSnapshot='';const weekdayNames=['Chủ nhật','Thứ hai','Thứ ba','Thứ tư','Thứ năm','Thứ sáu','Thứ bảy'];
@@ -86,8 +87,45 @@ if(auth.authenticated){await loadConfig();renderReview()}
 
 // Keep trigger labels in sync after the shared popup commits.
 $('editStart').onchange=()=>editStartClock.sync();$('editEnd').onchange=()=>editEndClock.sync();
-function editResources(){return space?bookingResources(space.data):[]}
-function renderEditSeats(){const resources=editResources();$('editSeats').replaceChildren();for(const seat of resources){const label=document.createElement('label'),input=document.createElement('input');input.type='checkbox';input.checked=editPicked.has(seat.id);label.className='edit-seat';label.append(input,document.createTextNode(adminSeatLabel(seat.code)+(seat.capacity===6?' · '+t('{count} chỗ',{count:6}):'')));input.onchange=()=>{if(input.checked){if(seat.capacity===6||resources.some(s=>editPicked.has(s.id)&&s.capacity===6))editPicked.clear();editPicked.add(seat.id)}else editPicked.delete(seat.id);renderEditSeats()};$('editSeats').append(label)}drawBookingMap($('editMap'),space,{...editing,seat_id:[...editPicked][0],seat_ids:JSON.stringify([...editPicked]),seat_label:t('Các chỗ đang chỉnh')},false)}
+function renderEditSeats(){
+ const resources=space?bookingResources(normalizeBookingLayout(space.data)):[];
+ const list=$('editSeats'),maps=$('editMap'),inputs=new Map();
+ list.replaceChildren();
+ maps.replaceChildren();
+ const syncSelection=()=>{
+  for(const [id,input] of inputs)input.checked=editPicked.has(id);
+  for(const node of maps.querySelectorAll('[data-resource-id]')){
+   const chosen=editPicked.has(node.getAttribute('data-resource-id'));
+   if(node.getAttribute('role')==='button')node.setAttribute('aria-pressed',String(chosen));
+   node.classList.toggle('requested',chosen);
+  }
+ };
+ const pick=seat=>{
+  if(editPicked.has(seat.id))editPicked.delete(seat.id);
+  else{
+   if(seat.capacity===6||resources.some(r=>r.capacity===6&&editPicked.has(r.id)))editPicked.clear();
+   editPicked.add(seat.id);
+  }
+  syncSelection();
+ };
+ for(const seat of resources){
+  const label=document.createElement('label'),input=document.createElement('input');
+  input.type='checkbox';
+  inputs.set(seat.id,input);
+  label.className='edit-seat';
+  label.append(input,document.createTextNode(adminSeatLabel(seat.code)+(seat.capacity===6?' · '+t('{count} chỗ',{count:6}):'')));
+  input.onchange=()=>pick(seat);
+  list.append(label);
+ }
+ const preview={...editing,seat_ids:'[]',seat_label:''};
+ for(const [area,label,capacity] of [['working','Khu 1 · Bàn 1–6',1],['meeting','Khu 2 · Bàn 7 bên trong',6]]){
+  if((resources.length||area==='meeting')&&!resources.some(seat=>seat.capacity===capacity))continue;
+  const panel=document.createElement('div');
+  drawBookingMap(panel,space,{...preview,seat_label:t(label)},false,{area,onPick:pick});
+  maps.append(panel);
+ }
+ syncSelection();
+}
 function openEdit(b){editing=b;editPicked.clear();for(const id of b.seat_ids?JSON.parse(b.seat_ids):[b.seat_id])editPicked.add(id);$('editDay').value=b.day;const fields={editName:b.display_name,editOrg:b.organization,editGroup:b.group_type,editEmail:b.email,editPhone:b.phone,editLeader:b.leader,editSubject:b.subject,editDescription:b.description,editNote:b.admin_note};for(const [id,value] of Object.entries(fields))$(id).value=value||'';for(const [id,kind,value] of [['editStart','start',b.start_minute??b.start_slot*30],['editEnd','end',b.end_minute??b.end_slot*30]]){$(id).replaceChildren();const choices=timeChoices(policyConfig,kind);if(!choices.includes(value))choices.push(value);for(const m of choices.sort((a,b)=>a-b))$(id).add(new Option(time(m),m));$(id).value=value}editStartClock.sync();editEndClock.sync();$('editError').textContent='';renderEditSeats();$('editModal').showModal()}
 $('closeEdit').onclick=()=>{editStartClock.close();editEndClock.close();$('editModal').close()};
 $('editForm').onsubmit=async e=>{e.preventDefault();if(!editing)return;$('saveEdit').disabled=true;$('editError').textContent='';const b={action:'edit',id:editing.id,expectedToken:editing.edit_token,seatIds:[...editPicked],day:$('editDay').value,startMinute:Number($('editStart').value),endMinute:Number($('editEnd').value),displayName:$('editName').value,organization:$('editOrg').value,groupType:$('editGroup').value,email:$('editEmail').value,phone:$('editPhone').value,leader:$('editLeader').value,subject:$('editSubject').value,description:$('editDescription').value,adminNote:$('editNote').value};try{await api('/api/admin/bookings',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(b)});editStartClock.close();editEndClock.close();$('editModal').close();toast(t('Đã lưu thay đổi.'));await load()}catch(e){$('editError').textContent=e.message}finally{$('saveEdit').disabled=false}};

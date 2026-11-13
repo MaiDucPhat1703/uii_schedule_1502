@@ -93,7 +93,7 @@ const english = {
  "Mô tả": "Description",
  "Ghi chú quản lý": "Admin note",
  "Chỗ ngồi": "Seats",
- "Chọn ghế hoặc chọn riêng Bàn 7 nguyên 6 chỗ.": "Select individual seats or book all six seats at Table 7 together.",
+ "Bấm vào sơ đồ hoặc dùng danh sách bên dưới. Bàn 7 được chọn nguyên cụm 6 chỗ.": "Click the map or use the list below. Table 7 is selected as a group of six seats.",
  "Lưu thay đổi": "Save changes",
  "Vui lòng đăng nhập admin.": "Please sign in as an administrator.",
  "Không kết nối được hệ thống": "Could not connect to the system",
